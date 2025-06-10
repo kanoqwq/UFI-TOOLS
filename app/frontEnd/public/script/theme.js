@@ -18,8 +18,8 @@ function getColorByPercent(e) {
     const h = (value / 100) * 300;
     currentHue = h;
     updateColor();
-    //保存进度到localStorage
-    localStorage.setItem('colorPer', value);
+
+    saveThemeConfig();
 }
 
 //亮度
@@ -27,7 +27,8 @@ function getValueByPercent(e) {
     const value = e.target.value;
     currentValue = value / 100;
     updateColor();
-    localStorage.setItem('brightPer', value);
+
+    saveThemeConfig();
 }
 
 // 透明度
@@ -35,8 +36,8 @@ function getOpacityByPercent(e) {
     const value = e.target.value; // 0 ~ 100
     currentOpacity = value / 100;
     updateColor();
-    //保存进度到localStorage
-    localStorage.setItem('opacityPer', value);
+
+    saveThemeConfig();
 }
 
 //饱和度
@@ -44,8 +45,8 @@ function getSaturationByPercent(e) {
     const value = e.target.value; // 0 ~ 100
     currentSaturation = value / 100;
     updateColor();
-    //保存进度到localStorage
-    localStorage.setItem('saturationPer', value);
+
+    saveThemeConfig();
 }
 
 //字体颜色
@@ -55,9 +56,8 @@ function updateTextColor(e) {
     const color = `rgb(${gray}, ${gray}, ${gray})`;
     currentTextColor = color;
     updateColor();
-    //保存进度到localStorage
-    localStorage.setItem('textColorPer', value);
-    localStorage.setItem('textColor', color);
+
+    saveThemeConfig();
 }
 
 //主页毛玻璃
@@ -65,8 +65,8 @@ function updateBlurSwitch(e) {
     const value = e.target.checked; // 0 ~ 100
     homeBlurSwitch = value
     updateColor()
-    //保存进度到localStorage
-    localStorage.setItem('blurSwitch', value);
+
+    saveThemeConfig();
 }
 
 // 更新颜色 + 透明度
@@ -79,13 +79,42 @@ function updateColor() {
     document.documentElement.style.setProperty('--dark-text-color', currentTextColor);
     document.documentElement.style.setProperty('--dark-text-color', currentTextColor);
     document.documentElement.style.setProperty('--blur-rate', homeBlurSwitch ? "4px" : "0");
-    //保存到localStorage
-    localStorage.setItem('themeColor', currentHue);
+}
+
+// 保存主题配置到文件
+async function saveThemeConfig() {
+    try {
+        const config = {
+            backgroundEnabled: document.querySelector('#isCheckedBG')?.checked || false,
+            backgroundUrl: document.querySelector('#BG_INPUT')?.value || '',
+            textColor: currentTextColor,
+            textColorPer: document.querySelector('#textColorEl')?.value || '100',
+            themeColor: currentHue.toString(),
+            colorPer: document.querySelector('#colorEl')?.value || '61',
+            saturationPer: document.querySelector('#saturationEl')?.value || '16',
+            brightPer: document.querySelector('#brightEl')?.value || '16',
+            opacityPer: document.querySelector('#opacityEl')?.value || '37',
+            blurSwitch: homeBlurSwitch.toString()
+        }
+
+        const response = await fetch(`${KANO_baseURL}/set_theme`, {
+            method: 'POST',
+            headers: common_headers,
+            body: JSON.stringify(config)
+        });
+
+        const result = await response.json();
+        if (result.result !== "success") {
+            console.error('保存主题配置失败:', result.error);
+        }
+    } catch (e) {
+        console.error('保存主题配置出错:', e);
+    }
 }
 
 //读取颜色数据
 const initTheme = async () => {
-    // 从云端拉取主题数据
+    // 从配置文件读取主题数据
     let result = null
     try {
         result = await (await fetchWithTimeout(KANO_baseURL + "/get_theme", {
@@ -93,69 +122,52 @@ const initTheme = async () => {
         })).json()
     } catch (e) {
         result = null
-        console.error('云端主题拉取数据失败：', e)
+        console.error('读取主题配置失败：', e)
     }
 
     if (result) {
-        Object.keys(result).forEach((key) => {
-            localStorage.setItem(key, result[key])
-        })
-    }
+        // 设置默认值
+        const defaultTheme = {
+            backgroundEnabled: "false",
+            backgroundUrl: "",
+            textColor: "rgba(255, 255, 255, 1)",
+            textColorPer: "100",
+            themeColor: "183",
+            colorPer: "61",
+            saturationPer: "16",
+            brightPer: "16",
+            opacityPer: "37",
+            blurSwitch: "true"
+        }
 
-    let color = localStorage.getItem('themeColor');
-    let colorPer = localStorage.getItem('colorPer');
-    let opacityPer = localStorage.getItem('opacityPer');
-    let value = localStorage.getItem('brightPer');
-    let saturation = localStorage.getItem('saturationPer');
-    let textColor = localStorage.getItem('textColor');
-    let textColorPer = localStorage.getItem('textColorPer');
-    let blur = localStorage.getItem('blurSwitch');
+        // 合并配置
+        const config = { ...defaultTheme, ...result }
 
-    if (blur == null || blur == undefined) {
-        blur = "true"
-    }
+        // 设置UI元素的值
+        document.querySelector('#textColorEl').value = config.textColorPer
+        document.querySelector('#colorEl').value = config.colorPer
+        document.querySelector('#saturationEl').value = config.saturationPer
+        document.querySelector('#brightEl').value = config.brightPer
+        document.querySelector('#opacityEl').value = config.opacityPer
+        document.querySelector('#blurSwitch').checked = config.blurSwitch === "true"
+        document.querySelector('#isCheckedBG').checked = config.backgroundEnabled === "true"
+        document.querySelector('#BG_INPUT').value = config.backgroundUrl
 
-    if (color == null || color == undefined) {
-        color = 183;
-        localStorage.setItem('themeColor', color);
-    }
-    if (colorPer == null || colorPer == undefined) {
-        colorPer = 61;
-        localStorage.setItem('colorPer', colorPer);
-    }
-    if (opacityPer == null || opacityPer == undefined) {
-        opacityPer = 37;
-        localStorage.setItem('opacityPer', opacityPer);
-    }
-    if (value == null || value == undefined) {
-        value = 16;
-        localStorage.setItem('brightPer', value);
-    }
-    if (saturation == null || saturation == undefined) {
-        saturation = 16;
-        localStorage.setItem('saturationPer', saturation);
-    }
-    if (textColor == null || textColor == undefined) {
-        textColor = 'rgba(255, 255, 255, 1)';
-        localStorage.setItem('textColor', textColor);
-    }
-    if (textColorPer == null || textColorPer == undefined) {
-        textColorPer = 100;
-        localStorage.setItem('textColorPer', textColorPer);
-    }
+        // 更新颜色
+        currentHue = parseInt(config.themeColor)
+        currentSaturation = parseInt(config.saturationPer) / 100
+        currentValue = parseInt(config.brightPer) / 100
+        currentOpacity = parseInt(config.opacityPer) / 100
+        currentTextColor = config.textColor
+        homeBlurSwitch = config.blurSwitch === "true"
 
-    homeBlurSwitch = blur == "true"
-    currentHue = color;
-    currentOpacity = opacityPer / 100;
-    currentValue = value / 100;
-    currentSaturation = saturation / 100;
-    currentTextColor = textColor;
-    updateColor();
-    document.querySelector("#colorEl").value = colorPer;
-    document.querySelector("#opacityEl").value = opacityPer;
-    document.querySelector("#brightEl").value = value;
-    document.querySelector("#saturationEl").value = saturation;
-    document.querySelector("#textColorEl").value = textColorPer;
-    document.querySelector("#blurSwitch").checked = homeBlurSwitch;
+        // 应用颜色
+        updateColor()
+
+        // 设置背景图片
+        if (config.backgroundEnabled === "true" && config.backgroundUrl) {
+            document.querySelector('#BG').style.backgroundImage = `url(${config.backgroundUrl})`
+        }
+    }
 }
 initTheme();
