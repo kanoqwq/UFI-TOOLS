@@ -2288,10 +2288,8 @@ function main_func() {
         if (!BG || bg_checked == undefined || !BG_OVERLAY) return
         if (!bg_checked) {
             BG.style.backgroundImage = 'unset'
-            localStorage.removeItem('backgroundUrl')
         } else {
             imgUrl.trim() && (BG.style.backgroundImage = `url(${imgUrl})`)
-            imgUrl.trim() && localStorage.setItem('backgroundUrl', imgUrl)
         }
         //发请求同步数据
         try {
@@ -2300,15 +2298,15 @@ function main_func() {
                 headers: common_headers,
                 body: JSON.stringify({
                     "backgroundEnabled": bg_checked,
-                    "backgroundUrl": localStorage.getItem("backgroundUrl") || '',
-                    "textColor": localStorage.getItem("textColor"),
-                    "textColorPer": localStorage.getItem("textColorPer"),
-                    "themeColor": localStorage.getItem("themeColor"),
-                    "colorPer": localStorage.getItem("colorPer"),
-                    "saturationPer": localStorage.getItem("saturationPer"),
-                    "brightPer": localStorage.getItem("brightPer"),
-                    "opacityPer": localStorage.getItem("opacityPer"),
-                    "blurSwitch": localStorage.getItem("blurSwitch")
+                    "backgroundUrl": imgUrl?.trim() || '',
+                    "textColor": document.querySelector('#textColorEl')?.value || '100',
+                    "textColorPer": document.querySelector('#textColorEl')?.value || '100',
+                    "themeColor": document.querySelector('#colorEl')?.value || '61',
+                    "colorPer": document.querySelector('#colorEl')?.value || '61',
+                    "saturationPer": document.querySelector('#saturationEl')?.value || '16',
+                    "brightPer": document.querySelector('#brightEl')?.value || '16',
+                    "opacityPer": document.querySelector('#opacityEl')?.value || '37',
+                    "blurSwitch": document.querySelector('#blurSwitch')?.checked || true
                 })
             })).json()
 
@@ -2322,14 +2320,12 @@ function main_func() {
         catch (e) {
             createToast(`同步失败!`, 'red')
         }
-
     }
 
     //初始化背景图片
     const initBG = async () => {
         const head_text = await getCustomHead()
         const BG = document.querySelector('#BG')
-        const imgUrl = localStorage.getItem('backgroundUrl')
         const isCheckedBG = document.querySelector('#isCheckedBG')
         const BG_INPUT = document.querySelector('#BG_INPUT')
 
@@ -2341,17 +2337,26 @@ function main_func() {
         }
 
         if (!BG || !isCheckedBG || !BG_INPUT) return
-        isCheckedBG.checked = imgUrl ? true : false
-        if (imgUrl?.length < 9999) {
-            BG_INPUT.value = imgUrl
-        }
-        if (!imgUrl) {
-            const BG_OVERLAY = document.querySelector('#BG_OVERLAY')
-            // BG_OVERLAY && (BG_OVERLAY.style.background = 'transparent')
-            return
-        }
 
-        BG.style.backgroundImage = `url(${imgUrl})`
+        // 从配置文件读取背景设置
+        try {
+            const result = await (await fetch(`${KANO_baseURL}/get_theme`, {
+                method: 'get',
+                headers: common_headers
+            })).json()
+
+            if (result) {
+                isCheckedBG.checked = result.backgroundEnabled === "true"
+                if (result.backgroundUrl?.length < 9999) {
+                    BG_INPUT.value = result.backgroundUrl
+                }
+                if (result.backgroundEnabled === "true" && result.backgroundUrl) {
+                    BG.style.backgroundImage = `url(${result.backgroundUrl})`
+                }
+            }
+        } catch (e) {
+            console.error('读取背景配置失败:', e)
+        }
     }
     initBG()
 
@@ -2378,14 +2383,6 @@ function main_func() {
             })).json()
 
             if (result == "success") {
-                localStorage.removeItem('themeColor')
-                localStorage.removeItem('textColorPer')
-                localStorage.removeItem('textColor')
-                localStorage.removeItem('saturationPer')
-                localStorage.removeItem('opacityPer')
-                localStorage.removeItem('colorPer')
-                localStorage.removeItem('brightPer')
-
                 createToast('重置成功，已同步至机器~', 'green')
                 document.querySelector('#fileUploader').value = ''
                 setTimeout(() => {

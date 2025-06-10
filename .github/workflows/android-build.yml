@@ -54,7 +54,7 @@ jobs:
           git push origin $TAG_NAME
 
       - name: Upload APK to GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ env.TAG_NAME }}
           files: app/build/outputs/apk/debug/UFI-TOOLS_WEB_debug.apk
