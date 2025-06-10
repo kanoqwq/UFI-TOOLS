@@ -90,7 +90,7 @@ async function saveThemeConfig() {
         const config = {
             backgroundEnabled: document.querySelector('#isCheckedBG')?.checked || false,
             backgroundUrl: document.querySelector('#BG_INPUT')?.value || '',
-            textColor: currentTextColor,
+            textColor: typeof currentTextColor === 'string' ? currentTextColor : `rgb(${currentTextColor}, ${currentTextColor}, ${currentTextColor})`,
             textColorPer: currentTextColorPer,
             themeColor: currentHue.toString(),
             colorPer: document.querySelector('#colorEl')?.value || '61',
@@ -162,6 +162,7 @@ const initTheme = async () => {
         currentValue = parseInt(config.brightPer) / 100
         currentOpacity = parseInt(config.opacityPer) / 100
         currentTextColor = config.textColor
+        currentTextColorPer = parseInt(config.textColorPer)
         homeBlurSwitch = config.blurSwitch === "true"
 
         // 应用颜色
