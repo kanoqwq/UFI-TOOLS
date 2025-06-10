@@ -8,6 +8,8 @@ let currentValue = 1;
 let currentSaturation = 1;
 //字体颜色
 let currentTextColor = 0;
+//字体颜色百分比
+let currentTextColorPer = 100;
 
 //主页模糊开关
 let homeBlurSwitch = true
@@ -55,6 +57,7 @@ function updateTextColor(e) {
     const gray = Math.round((value / 100) * 255);
     const color = `rgb(${gray}, ${gray}, ${gray})`;
     currentTextColor = color;
+    currentTextColorPer = value;
     updateColor();
 
     saveThemeConfig();
@@ -88,7 +91,7 @@ async function saveThemeConfig() {
             backgroundEnabled: document.querySelector('#isCheckedBG')?.checked || false,
             backgroundUrl: document.querySelector('#BG_INPUT')?.value || '',
             textColor: currentTextColor,
-            textColorPer: document.querySelector('#textColorEl')?.value || '100',
+            textColorPer: currentTextColorPer,
             themeColor: currentHue.toString(),
             colorPer: document.querySelector('#colorEl')?.value || '61',
             saturationPer: document.querySelector('#saturationEl')?.value || '16',
