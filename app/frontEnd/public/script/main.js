@@ -3875,7 +3875,7 @@ function main_func() {
         const list = TTYD.querySelector('.deviceList')
         list.innerHTML = `
         <li style = "padding:10px">
-                    <iframe src="https://cg.163.com/#/mobile" style="border:none;padding:0;margin:0;width:100%;height:600px;border-radius: 10px;overflow: hidden;opacity: 1;"></iframe>
+                    <iframe src="https://ys.mihoyo.com/cloud/m/#/" style="border:none;padding:0;margin:0;width:100%;height:600px;border-radius: 10px;overflow: hidden;opacity: 1;"></iframe>
         </li > `
     }
 
