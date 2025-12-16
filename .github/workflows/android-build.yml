@@ -33,3 +33,15 @@ jobs:
 
       - name: Build with tag version
         run: ./gradlew assembleDebug
+
+      - name: Find
+        run: |
+          find . -name "*.apk" -path "*/debug/*"
+          echo "APK_PATH=$(find . -name "app-debug.apk" -path "*/debug/*" | head -n1)" >> $GITHUB_ENV
+          
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-apk
+          path: ${{ env.APK_PATH }} 
+          retention-days: 30
