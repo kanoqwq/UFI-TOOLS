@@ -101,6 +101,8 @@
                             onclick="createToast(t('please_login'),'red')">文件共享</button>
                         <button id="ROAM" class="btn" data-i18n="network_roam"
                             onclick="createToast(t('please_login'),'red')">网络漫游</button>
+                        <button id="SIM_PROTECT" class="btn" data-i18n="sim_protect"
+                            onclick="showModal('#SimProtectModal')">SIM卡保护</button>
                         <button id="smsForward" class="btn" data-i18n="sms_forward"
                             onclick="createToast(t('please_login'),'red')">短信转发</button>
                         <button id="ScheduledTaskManagement" class="btn" data-i18n="scheduled_task"
@@ -940,6 +942,32 @@
                             <button type="submit" data-i18n="submit_btn">提交</button>
                             <button type="button" data-i18n="close_btn"
                                 onclick="closeModal('#LANManagementModal')">关闭</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <!-- SIM卡保护模态框 -->
+            <div class="mask" id="SimProtectModal" style="display: none">
+                <div class="modal">
+                    <div class="title" data-i18n="sim_protect_title">SIM卡保护</div>
+                    <form onsubmit="handleSimProtectFormSubmit(event)" id="SimProtectForm">
+                        <div class="content" style="overflow-y: scroll;padding: 15px;width: 66vw;max-width: 400px;">
+                            <div class="item">
+                                <label style="display: flex;align-items: center;">
+                                    <span data-i18n="sim_pin_label">PIN码：</span>
+                                    <input style="flex: 1;width: 100%;" name="PinNumber" type="password" placeholder="请输入6位PIN码" maxlength="6">
+                                </label>
+                            </div>
+                            <div class="item">
+                                <label style="display: flex;align-items: center;">
+                                    <span data-i18n="sim_auto_unlock_label">自动解锁：</span>
+                                    <input type="checkbox" name="auto_unlock">
+                                </label>
+                            </div>
+                        </div>
+                        <div class="btn" style="text-align: right;margin-top: 6px;">
+                            <button type="submit" data-i18n="submit_btn">保存</button>
+                            <button type="button" data-i18n="close_btn" onclick="closeModal('#SimProtectModal')">关闭</button>
                         </div>
                     </form>
                 </div>

@@ -879,6 +879,14 @@ function main_func() {
             //不管设备是否显串，只要iccid有变更，就清空imei缓存
             if (window.UFI_DATA["iccid"] !== res.iccid) {
                 resetDiagImeiCache()
+
+                // 检查是否需要自动解锁SIM卡
+                const autoUnlock = localStorage.getItem('simProtectAutoUnlock') === 'true';
+                const pinNumber = localStorage.getItem('simProtectPin');
+                if (autoUnlock && pinNumber) {
+                    console.log('ICCID changed, trying to auto unlock SIM card...');
+                    submitSimPin(pinNumber);
+                }
             }
 
             Object.keys(res).forEach(key => {
@@ -5506,6 +5514,62 @@ echo ${flag ? '1' : '0'} > /sys/devices/system/cpu/cpu3/online
             localStorage.setItem("cellularTestUrl", target.value.trim())
         }
     }
+// SIM卡保护表单提交处理
+    const handleSimProtectFormSubmit = (event) => {
+        event.preventDefault();
+        const form = event.target;
+        const formData = new FormData(form);
+        const pinNumber = formData.get('PinNumber');
+        const autoUnlock = formData.get('auto_unlock') === 'on';
+        
+        // 保存配置到localStorage
+        localStorage.setItem('simProtectPin', pinNumber);
+        localStorage.setItem('simProtectAutoUnlock', autoUnlock);
+        
+        // 显示成功提示
+        createToast('保存成功', 'green');
+        closeModal('#SimProtectModal');
+    };
+
+
+
+    // 提交SIM卡PIN码解锁请求
+    const submitSimPin = async (pinNumber) => {
+        try {
+            const cookie = await login();
+            if (!cookie) {
+                createToast('登录失败', 'red');
+                return false;
+            }
+            
+            const AD = await processAD(cookie);
+            const body = new URLSearchParams({
+                isTest: 'false',
+                goformId: 'ENTER_PIN',
+                PinNumber: pinNumber,
+                AD: AD
+            });
+            
+            const res = await fetch(KANO_baseURL + "/goform/goform_set_cmd_process", {
+                method: "POST",
+                headers: {
+                    ...common_headers,
+                    "content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                    "Cookie": cookie
+                },
+                body
+            });
+            
+            const res_data = await res.text();
+            await logout(cookie);
+            
+            return res.ok;
+        } catch (error) {
+            console.error('提交PIN码失败:', error);
+            return false;
+        }
+    };
+
 
     //从插件商店下载插件并安装
     const installPluginFromStore = async (url, name) => {
@@ -6698,7 +6762,8 @@ echo ${flag ? '1' : '0'} > /sys/devices/system/cpu/cpu3/online
         setOrRemoveDeviceFromBlackList,
         onSelectCellRow,
         handleClosePayModal,
-        toggleCellInfoRefresh
+        toggleCellInfoRefresh,
+        handleSimProtectFormSubmit
     }
 
     try {
