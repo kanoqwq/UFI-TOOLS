@@ -24,13 +24,6 @@ class BootReceiver : BroadcastReceiver() {
             AppMeta.init(context)
             UniqueDeviceIDManager.init(context)
 
-            //check
-            val isNotUFI = DeviceModelChecker.checkIsNotUFI(context)
-            if (isNotUFI){
-                Log.d("UFI_TOOLS_LOG", "检测到设备不是UFI/MIFI设备，终结程序")
-                exitProcess(-999)
-            }
-
             // 启动协程异步调用 suspend 函数
             CoroutineScope(Dispatchers.Default).launch {
                 UniqueDeviceIDManager.init(context)

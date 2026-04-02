@@ -67,100 +67,20 @@
                             <button class="btn REFRESH_BTN" data-i18n="stop_refresh">停止刷新</button>
                             <button id="CHANGETOKEN" class="btn" data-i18n="change_token"
                                 onclick="createToast(t('please_login'),'red')">更改口令</button>
-                            <button id="CHANGEPWD" class="btn" data-i18n="change_password"
-                                onclick="createToast(t('please_login'),'red')">更改密码</button>
-                            <button id="REBOOT" class="btn" data-i18n="reboot"
-                                onclick="createToast(t('please_login'),'red')">重启设备</button>
-                            <button id="SCHEDULE_REBOOT" class="btn" data-i18n="schedule_reboot"
-                                onclick="createToast(t('please_login'),'red')">定时重启</button>
-                            <button id="SHUTDOWN" style="display: none;" class="btn" data-i18n="shutdown"
-                                onclick="createToast(t('please_login'),'red')">关机</button>
                             <button id="BG_SETTING" class="btn" data-i18n="bg_setting"
                                 onclick="createToast(t('please_login'),'red')">主题背景</button>
                             <button id="PLUGIN_SETTING" class="btn" data-i18n="plugin_setting"
                                 onclick="createToast(t('please_login'),'red')">插件功能</button>
-                            <div style="display: inline-block;position: relative;">
-                                <div class="tip" style="display: none;" id="UNREAD_SMS">0</div>
-                                <button id="SMS" class="btn" data-i18n="sms">短信收发</button>
-                            </div>
-                            <button id="DataManagement" class="btn" data-i18n="data_mgmt">流量管理</button>
                             <button id="SpeedTestBtn" class="btn" data-i18n="speed_test"
                                 onclick="showModal('#speedTestModal')">内网测速</button>
                             <button id="CellularSpeedTestBtn" class="btn" data-i18n="cellular_speed_test"
                                 onclick="createToast(t('please_login'),'red')">流量测速</button>
-                            <button id="ClientManagement" class="btn" data-i18n="client_mgmt">接入设备</button>
-                            <button id="WIFIManagement" class="btn" data-i18n="wifi_mgmt">WIFI设置</button>
-                            <button id="LANManagement" class="btn" data-i18n="lan_mgmt">内网设置</button>
                             <button id="AT" class="btn" data-i18n="at_cmd"
                                 onclick="createToast(t('please_login'),'red')">AT指令</button>
                             <button id="ADVANCE" class="btn" data-i18n="advanced"
                                 onclick="createToast(t('please_login'),'red')">高级功能</button>
-                            <button id="CECULLAR" class="btn" data-i18n="cellular"
-                                onclick="createToast(t('please_login'),'red')">数据流量</button>
-                            <button id="ADB" class="btn" data-i18n="adb"
-                                onclick="createToast(t('please_login'),'red')">USB调试</button>
-                            <button id="ADB_NET" class="btn" data-i18n="adb_autostart"
-                                onclick="createToast(t('please_login'),'red')">ADB自启</button>
-                            <button id="PERF" class="btn" data-i18n="performance_mode"
-                                onclick="createToast(t('please_login'),'red')">性能模式</button>
-                            <button id="LIGHT" class="btn" data-i18n="indicator"
-                                onclick="createToast(t('please_login'),'red')">指示灯</button>
-                            <button id="NFC" style="display: none;" class="btn" data-i18n="nfc"
-                                onclick="createToast(t('please_login'),'red')">NFC</button>
-                            <button id="SMB" class="btn" data-i18n="file_sharing"
-                                onclick="createToast(t('please_login'),'red')">文件共享</button>
-                            <button id="ROAM" class="btn" data-i18n="network_roam"
-                                onclick="createToast(t('please_login'),'red')">网络漫游</button>
-                            <button id="smsForward" class="btn" data-i18n="sms_forward"
-                                onclick="createToast(t('please_login'),'red')">短信转发</button>
-                            <button id="ScheduledTaskManagement" class="btn" data-i18n="scheduled_task"
-                                onclick="createToast(t('please_login'),'red')">定时任务</button>
-                            <button id="APNManagement" data-i18n="apn_setting" class="btn"
-                                onclick="createToast(t('please_login'),'red')">APN设置</button>
                             <button id="USBStatusManagement" data-i18n="usb_status" class="btn"
                                 onclick="createToast(t('please_login'),'red')">USB状态</button>
-                            <button id="OTA" class="btn" data-i18n="ota"
-                                onclick="createToast(t('please_login'),'red')">软件更新</button>
-
-                            <select class="select" style="display: none;" id="SLEEP_TIME"
-                                onchange="changeSleepTime(event)">
-                                <option value="-1" data-i18n="sleep_never">从不休眠</option>
-                                <option value="5" data-i18n="sleep_5_min">5分钟</option>
-                                <option value="10" data-i18n="sleep_10_min">10分钟</option>
-                                <option value="20" data-i18n="sleep_20_min">20分钟</option>
-                                <option value="30" data-i18n="sleep_30_min">30分钟</option>
-                                <option value="60" data-i18n="sleep_1_hr">1小时</option>
-                                <option value="120" data-i18n="sleep_2_hr">2小时</option>
-                            </select>
-
-                            <select class="select" id="NET_TYPE" onchange="changeNetwork(event)">
-                                <option value="WL_AND_5G" data-i18n="net_auto">5G/4G/3G</option>
-                                <option value="LTE_AND_5G" data-i18n="net_nsa">5G NSA</option>
-                                <option value="Only_5G" data-i18n="net_sa">5G SA</option>
-                                <option value="WCDMA_AND_LTE" data-i18n="net_4g_3g">4G/3G</option>
-                                <option value="Only_LTE" data-i18n="net_4g">仅4G</option>
-                                <option value="Only_WCDMA" data-i18n="net_3g">仅3G</option>
-                            </select>
-
-                            <select class="select" id="USB_TYPE" onchange="changeUSBNetwork(event)">
-                                <option value="0" data-i18n="usb_auto">USB上网:自动</option>
-                                <option value="1" data-i18n="usb_rndis">RNDIS</option>
-                                <option value="2" data-i18n="usb_cdc">CDC-ECM</option>
-                            </select>
-
-                            <select class="select" id="SIM_CARD_TYPE" style="display: none;"
-                                onchange="changeSimCard(event)">
-                                <option value="0" data-i18n="sim1">SIM1</option>
-                                <option value="1" data-i18n="sim2">SIM2</option>
-                            </select>
-
-                            <select class="select" id="SIM_CARD_TYPE_V50" style="display: none;"
-                                onchange="changeSimCard(event)">
-                                <option value="0" data-i18n="sim1_v50">移动</option>
-                                <option value="1" data-i18n="sim2_v50">电信</option>
-                                <option value="2" data-i18n="sim3_v50">联通</option>
-                                <option value="11" data-i18n="sim4_v50">外置</option>
-                            </select>
 
                             <select class="select" id="LANG"></select>
                         </div>
@@ -515,36 +435,25 @@
             <div class="mask" id="tokenModal" style="display: none">
                 <div class="modal" style="width: 90vw;max-width: 450px;">
                     <div class="title" style="display: flex;justify-content: space-between;">
-                        <span data-i18n="token_title">请输入口令与密码</span>
+                        <span data-i18n="token_title">请输入口令</span>
                         <button style="border-radius: 50%;" onclick="showLoginHelp()">?</button>
                     </div>
                     <div class="title" style="margin: 10px 0;">
                         <p style="font-size: 12px;margin: 0;">
                             <i>
-                                <span data-i18n="token_note_1">注：请填入口令和密码</span><br>
+                                <span data-i18n="token_note_1">注：请输入 UFI-TOOLS 登录口令</span><br>
                                 <span data-i18n="token_note_2">第一个为UFI-TOOLS登录口令(默认为admin)</span><br>
-                                <span data-i18n="token_note_3">第二个为某兴后台的管理密码(在机器背面可以找到)</span><br>
-                                <span data-i18n="token_note_4">如果出现密码错误，请换一个登录方式</span>
+                                <span data-i18n="token_note_3">设备后台密码已改为由服务端统一管理</span>
                             </i>
                         </p>
                     </div>
                     <form class="content"
                         style="padding: 0px 4px 0 4px;display: flex;flex-direction: column;align-items: center;">
                         <input type="text" name="username" autocomplete="username" style="display: none;">
-                        <select style="width: 100%;margin-bottom: 10px;" class="select" name="" value="1"
-                            id="login_method">
-                            <option value="1" data-i18n="login_method_1">登录方式1</option>
-                            <option value="0" data-i18n="login_method_2">登录方式2</option>
-                        </select>
                         <div id="TOKEN_LABEL" style="align-self: start;margin-bottom: 10px;font-size: .85rem;"
                             data-i18n="token_div_1">UFI 口令：</div>
                         <input name="backend_password" autocomplete="current-password" id="TOKEN" type="password"
                             data-i18n-placeholder="token_placeholder_token" placeholder="口令(UFI-TOOLS后台应用中查看)"
-                            style="width: 100%;text-indent: .5em;margin:0 4px;margin-bottom: 10px;height: 30px;">
-                        <div style="align-self: start;margin-bottom: 10px;font-size: .85rem;" data-i18n="token_div_2">
-                            某兴后台密码：</div>
-                        <input name="web_password" autocomplete="new-password" id="PWDINPUT" type="password"
-                            data-i18n-placeholder="token_placeholder_pwd" placeholder="官方后台的管理密码"
                             style="width: 100%;text-indent: .5em; margin:0 4px;margin-bottom: 20px;height: 30px;">
                     </form>
                     <div class="btn" style="text-align: right;">
@@ -638,46 +547,6 @@
                                     data-i18n="voltage_now">电池电压</span></label></li>
                         <li draggable="true"><label><input type="checkbox" data-name="realtime_rx_thrpt"><span
                                     data-i18n="realtime_rx_thrpt">实时网速</span></label></li>
-                    </ul>
-
-                    <div class="title" style="margin: 10px 0;" data-i18n="status_section_signal">信号参数</div>
-                    <ul class="drag" id="draggable_signal">
-                        <li draggable="true"><label><input type="checkbox" data-name="Z5g_rsrp"><span
-                                    data-i18n="Z5g_rsrp">5G接收功率</span></label></li>
-                        <li draggable="true"><label><input type="checkbox" data-name="Nr_snr"><span
-                                    data-i18n="Nr_snr">5G SINR</span></label></li>
-                        <li draggable="true"><label><input type="checkbox" data-name="Nr_bands"><span
-                                    data-i18n="Nr_bands">5G 注册频段</span></label></li>
-                        <li draggable="true"><label><input type="checkbox" data-name="Nr_fcn"><span
-                                    data-i18n="Nr_fcn">5G 频点</span></label></li>
-                        <li draggable="true"><label><input type="checkbox" data-name="Nr_bands_widths"><span
-                                    data-i18n="Nr_bands_widths">5G 频宽</span></label></li>
-                        <li draggable="true"><label><input type="checkbox" data-name="Nr_pci"><span
-                                    data-i18n="Nr_pci">5G PCI</span></label></li>
-                        <li draggable="true"><label><input type="checkbox" data-name="nr_rsrq"><span
-                                    data-i18n="nr_rsrq">5G RSRQ</span></label></li>
-                        <li draggable="true"><label><input type="checkbox" data-name="nr_rssi"><span
-                                    data-i18n="nr_rssi">5G RSSI</span></label></li>
-                        <li draggable="true"><label><input type="checkbox" data-name="Nr_cell_id"><span
-                                    data-i18n="Nr_cell_id">5G 基站ID</span></label></li>
-                        <li draggable="true"><label><input type="checkbox" data-name="lte_rsrp"><span
-                                    data-i18n="lte_rsrp">4G接收功率</span></label></li>
-                        <li draggable="true"><label><input type="checkbox" data-name="Lte_snr"><span
-                                    data-i18n="Lte_snr">4G SINR</span></label></li>
-                        <li draggable="true"><label><input type="checkbox" data-name="Lte_bands"><span
-                                    data-i18n="Lte_bands">4G 注册频段</span></label></li>
-                        <li draggable="true"><label><input type="checkbox" data-name="Lte_fcn"><span
-                                    data-i18n="Lte_fcn">4G 频点</span></label></li>
-                        <li draggable="true"><label><input type="checkbox" data-name="Lte_bands_widths"><span
-                                    data-i18n="Lte_bands_widths">4G 频宽</span></label></li>
-                        <li draggable="true"><label><input type="checkbox" data-name="Lte_pci"><span
-                                    data-i18n="Lte_pci">4G PCI</span></label></li>
-                        <li draggable="true"><label><input type="checkbox" data-name="lte_rsrq"><span
-                                    data-i18n="lte_rsrq">4G RSRQ</span></label></li>
-                        <li draggable="true"><label><input type="checkbox" data-name="lte_rssi"><span
-                                    data-i18n="lte_rssi">4G RSSI</span></label></li>
-                        <li draggable="true"><label><input type="checkbox" data-name="Lte_cell_id"><span
-                                    data-i18n="Lte_cell_id">4G 基站ID</span></label></li>
                     </ul>
 
                     <div class="title" style="margin: 10px 0;" data-i18n="status_section_device">设备属性</div>

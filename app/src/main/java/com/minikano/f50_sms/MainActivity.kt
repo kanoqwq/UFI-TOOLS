@@ -123,35 +123,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            val isNotUFI = withContext(Dispatchers.IO) { DeviceModelChecker.checkIsNotUFI(applicationContext) }
-
-            if (isNotUFI) {
-                Toast.makeText(applicationContext, "App仅可在随身wifi上安装使用，手机使用请下载手机直装版，正在退出...", Toast.LENGTH_LONG).show()
-                setContent {
-                    Card(
-                        shape = RoundedCornerShape(16.dp), // 圆角
-                        elevation = CardDefaults.cardElevation(8.dp), // 阴影
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp) // 外边距
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(16.dp),
-                            verticalArrangement = Arrangement.Center,
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            repeat(10) {
-                                Text("只能在随身WiFi上安装使用!!!", fontSize = 16.sp)
-                            }
-                        }
-                    }
-                }
-                delay(4600)
-                exitProcess(-114514)
-            }
-
             val isUnSupportDevice = withContext(Dispatchers.IO) { DeviceModelChecker.checkBlackList(applicationContext) }
 
             if (isUnSupportDevice) {
