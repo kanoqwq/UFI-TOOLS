@@ -5,7 +5,7 @@ const path = require('path');
 const app = express();
 
 app.use('/api', createProxyMiddleware({
-  target: 'http://192.168.123.222:2333/api',
+  target: 'http://192.168.123.13:2333/api',
   changeOrigin: false,
 }));
 

@@ -716,7 +716,7 @@ class KanoUtils {
                     putBoolean(PREF_ISDEBUG, false)
                 }
                 if (!existing.containsKey(PREF_GATEWAY_IP)) {
-                    putString(PREF_GATEWAY_IP, "192.168.0.1:8080")
+                    putString(PREF_GATEWAY_IP, "0.0.0.0:8080")
                 }
                 if (!existing.containsKey(PREF_TOKEN_ENABLED)) {
                     putString(PREF_TOKEN_ENABLED, true.toString())

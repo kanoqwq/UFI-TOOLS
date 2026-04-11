@@ -79,7 +79,7 @@ class WebService : Service() {
     private fun startWebServer() {
         val prefs = getSharedPreferences("kano_ZTE_store", Context.MODE_PRIVATE)
         Thread {
-            val currentIp = prefs.getString("gateway_ip", "192.168.0.1:8080") ?: "192.168.0.1:8080"
+            val currentIp = prefs.getString("gateway_ip", "0.0.0.0:8080") ?: "0.0.0.0:8080"
             allowAutoStart = true
             try {
                 Log.d("UFI_TOOLS_LOG", "正在启动web服务，绑定地址：http://0.0.0.0:$port")

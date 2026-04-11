@@ -209,8 +209,8 @@ class MainActivity : ComponentActivity() {
                         mutableStateOf(
                             sharedPrefs.getString(
                                 PREF_GATEWAY_IP,
-                                "192.168.0.1:8080"
-                            ) ?: "192.168.0.1:8080"
+                                "0.0.0.0:8080"
+                            ) ?: "0.0.0.0:8080"
                         )
                     }
 
@@ -275,8 +275,8 @@ class MainActivity : ComponentActivity() {
 
                                 gatewayIp = sharedPrefs.getString(
                                             PREF_GATEWAY_IP,
-                                            "192.168.0.1:8080"
-                                        ) ?: "192.168.0.1:8080"
+                                            "0.0.0.0:8080"
+                                        ) ?: "0.0.0.0:8080"
 
                                 loginToken = sharedPrefs.getString(
                                             PREF_LOGIN_TOKEN,
