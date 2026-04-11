@@ -762,7 +762,7 @@ function main_func() {
             return
         }
         if (res) {
-            //如果打开了高级功能，且用户已经处于改串后不显串状态，则使用强力查串补充串号显示
+            // //如果打开了高级功能，且用户已经处于改串后不显串状态，则使用强力查串补充串号显示
             if (!res.imei || res.imei.length === 0) {
                 res.imei = await queryImeiFromDIAG()
             }
@@ -1285,50 +1285,6 @@ function main_func() {
         } catch {
             createToast(t('toast_unlock_cell_failed'), 'red')
         }
-    }
-
-    let rebootBtnCount = 1
-    let rebootTimer = null
-    let rebootDevice = async (e) => {
-        let target = e.target
-        if (!(await initRequestData())) {
-            out()
-            target.style.backgroundColor = 'var(--dark-btn-disabled-color)'
-            return null
-        }
-        target.style.backgroundColor = ''
-        rebootTimer && clearTimeout(rebootTimer)
-        if (rebootBtnCount == 1) target.innerHTML = t('reboot_confirm')
-        if (rebootBtnCount == 2) target.innerHTML = t('reboot_confirm_confirm')
-        if (rebootBtnCount >= 3) {
-            target.innerHTML = t('rebooting')
-            try {
-                const cookie = await login()
-                if (!cookie) {
-                    createToast(t('toast_login_failed_check_network'), 'red')
-                    out()
-                    return null
-                }
-
-                const res = await (await postData(cookie, {
-                    goformId: 'REBOOT_DEVICE',
-                })).json()
-
-                if (res.result == 'success') {
-                    createToast(t('toast_rebot_success'), 'green')
-                } else {
-                    throw t('toast_reboot_failed')
-                }
-
-            } catch {
-                createToast(t('toast_reboot_failed'), 'red')
-            }
-        }
-        rebootBtnCount++
-        rebootTimer = setTimeout(() => {
-            rebootBtnCount = 1
-            target.innerHTML = t("reboot")
-        }, 3000);
     }
 
     //字段显示隐藏
@@ -2836,6 +2792,8 @@ function main_func() {
 
     //软件更新
     const queryUpdate = async () => {
+        return null
+
         if (!(await initRequestData())) {
             return null
         }
@@ -2865,6 +2823,8 @@ function main_func() {
 
     //安装更新
     const requestInstallUpdate = async () => {
+        return null
+
         // const changelogTextContent = document.querySelector('#ChangelogTextContent')
         // changelogTextContent.innerHTML = ''
         const OTATextContent = document.querySelector('#OTATextContent')
@@ -2896,6 +2856,8 @@ function main_func() {
     //立即更新
     let updateSoftwareInterval = null
     const handleUpdateSoftware = async (url) => {
+        return null
+
         updateSoftwareInterval && updateSoftwareInterval()
         if (!url || url.trim() == "") return
         const doUpdateEl = document.querySelector('#doUpdate')
@@ -2989,6 +2951,7 @@ function main_func() {
 
     //检测更新
     const checkUpdateAction = async (silent = false) => {
+        return null
         const changelogTextContent = document.querySelector('#ChangelogTextContent')
         const OTATextContent = document.querySelector('#OTATextContent')
         OTATextContent.innerHTML = t('checking_update')
@@ -3079,6 +3042,8 @@ function main_func() {
     }
 
     const initUpdateSoftware = async () => {
+        return
+
         const changelogTextContent = document.querySelector('#ChangelogTextContent')
         changelogTextContent.innerHTML = ''
         const btn = document.querySelector('#OTA')
@@ -3104,7 +3069,6 @@ function main_func() {
         }
     }
     initUpdateSoftware()
-
 
     //adb轮询
     async function adbQuery() {

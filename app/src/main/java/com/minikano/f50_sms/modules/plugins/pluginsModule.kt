@@ -2,8 +2,6 @@ package com.minikano.f50_sms.modules.plugins
 
 import android.content.Context
 import androidx.core.content.edit
-import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
 import com.minikano.f50_sms.configs.AppMeta
 import com.minikano.f50_sms.utils.KanoLog
 import com.minikano.f50_sms.modules.BASE_TAG
@@ -18,77 +16,31 @@ import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import org.json.JSONObject
-import androidx.datastore.preferences.core.edit
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.runBlocking
-
-val Context.dataStore by preferencesDataStore(name = "kano_ZTE_store")
-val KANO_CUSTOM_HEAD = stringPreferencesKey("kano_custom_head")
-
-sealed class DataStoreResult<out T> {
-    data class Success<T>(val data: T? = null) : DataStoreResult<T>()
-    data class Error(val exception: Throwable) : DataStoreResult<Nothing>()
-}
-
-suspend fun saveCustomHeadToDataStore(
-    context: Context,
-    text: String
-): DataStoreResult<Unit> {
-    return try {
-        context.dataStore.edit { preferences ->
-            preferences[KANO_CUSTOM_HEAD] = text
-        }
-        DataStoreResult.Success(Unit)
-    } catch (e: Exception) {
-        DataStoreResult.Error(e)
-    }
-}
-
-fun saveCustomHeadBlocking(
-    context: Context,
-    text: String
-): DataStoreResult<Unit> {
-    return try {
-        runBlocking(Dispatchers.IO) {
-            context.dataStore.edit { preferences ->
-                preferences[KANO_CUSTOM_HEAD] = text
-            }
-        }
-        DataStoreResult.Success(Unit)
-    } catch (e: Exception) {
-        DataStoreResult.Error(e)
-    }
-}
-
-suspend fun getCustomHeadFromDataStore(context: Context): String? {
-    return try {
-        context.dataStore.data
-            .map { it[KANO_CUSTOM_HEAD] }
-            .first()
-    } catch (e: Exception) {
-        null
-    }
-}
 
 fun Route.pluginsModule(context: Context) {
     val TAG = "[$BASE_TAG]_pluginsModule"
+    val PLUGIN_STORE_NAME = "kano_plugin_store"
+    val PLUGIN_KEY = "kano_plugins"
 
     authenticatedRoute(context){
-        //保存自定义头部
+        //保存插件
         post("/api/set_custom_head") {
             try {
                 val body = call.receiveText()
+                val bodyBytes = body.toByteArray(Charsets.UTF_8)
+                val maxSizeInBytes = 5 * 1024 * 1024
+
+                if (bodyBytes.size > maxSizeInBytes) {
+                    throw Exception("插件总容量超出限制: ${bodyBytes.size / 1024}KB/${maxSizeInBytes / 1024}KB")
+                }
 
                 val json = JSONObject(body)
                 val text = json.optString("text", "").trim()
 
-                val result = saveCustomHeadBlocking(context,text)
-                if (result is DataStoreResult.Error) {
-                   throw Exception(result.exception)
+                val sharedPref =
+                    context.getSharedPreferences(PLUGIN_STORE_NAME, Context.MODE_PRIVATE)
+                sharedPref.edit(commit = true){
+                    putString(PLUGIN_KEY, text)
                 }
 
                 call.response.headers.append("Access-Control-Allow-Origin", "*")
@@ -155,30 +107,13 @@ fun Route.pluginsModule(context: Context) {
         }
     }
 
-    //读取自定义头部
+    //读取插件
     get("/api/get_custom_head") {
         try {
             val sharedPref =
-                context.getSharedPreferences("kano_ZTE_store", Context.MODE_PRIVATE)
-
-            //Deprecated
-            val oldText = sharedPref.getString("kano_custom_head", "") ?: ""
-
-            if(oldText.isNotEmpty()){
-                val result = saveCustomHeadBlocking(context,oldText)
-                if (result is DataStoreResult.Error) {
-                    KanoLog.e(TAG, "迁移kano_custom_head 到 DataStore出错： ${result.exception.message}")
-                }
-                if (result is DataStoreResult.Success) {
-                    sharedPref.edit(commit = true){
-                        remove("kano_custom_head")
-                    }
-                }
-            }
-
-            val textFromDataStore = getCustomHeadFromDataStore(context) ?: ""
-
-            val json = JSONObject(mapOf("text" to textFromDataStore)).toString()
+                context.getSharedPreferences(PLUGIN_STORE_NAME, Context.MODE_PRIVATE)
+            val text = sharedPref.getString(PLUGIN_KEY, "") ?: ""
+            val json = JSONObject(mapOf("text" to text)).toString()
 
             call.response.headers.append("Access-Control-Allow-Origin", "*")
             call.respondText(
@@ -196,5 +131,4 @@ fun Route.pluginsModule(context: Context) {
             )
         }
     }
-
 }
