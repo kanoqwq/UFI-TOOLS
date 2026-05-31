@@ -182,7 +182,18 @@ suspend fun readThermalZones(): Pair<Int, String> = withContext(Dispatchers.IO) 
                 val sensorType = typeFile.readText().trim()
                 val tempValue = tempFile.readText().trim().toIntOrNull() ?: -1
                 //大于124摄氏度的传感器不显示（过滤无意义值）
-                if (tempValue <= 124 * 1000 && tempValue >= 0 && sensorType.isNotEmpty()) {
+                if (tempValue <= 124 * 1000 &&
+                    tempValue >= 0 &&
+                    sensorType.isNotEmpty() &&
+                    !sensorType.contains("chg") &&
+                    !sensorType.contains("front") &&
+                    !sensorType.contains("frame") &&
+                    !sensorType.contains("wcn") &&
+                    !sensorType.contains("usb") &&
+                    !sensorType.contains("bcl") &&
+                    !sensorType.contains("interface") &&
+                    !sensorType.contains("back")
+                ) {
                     zones.add(ThermalZone(sensorType, tempValue))
                 }
             } catch (_: Exception) { }
