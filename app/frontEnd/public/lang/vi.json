@@ -835,5 +835,7 @@
     "wake_lock_disabled": "wakelock off",
     "plugin_post_request_toast": "Bạn cũng có thể gửi email tới <b style=\"pointer-events: all;color:pink\" onclick=\"copyText(event)\">plugin@kano.ink</b> để gửi plugin",
     "plugin_post_request_toast_title": "Gửi plugin",
-    "plugin_post_request": "[Gửi plugin UFI] Yêu cầu gửi plugin"
+    "plugin_post_request": "[Gửi plugin UFI] Yêu cầu gửi plugin",
+    "plugin_set_repo_save": "Tải",
+    "custom_plugin_repo": "Nguồn plugin tùy chỉnh"
 }

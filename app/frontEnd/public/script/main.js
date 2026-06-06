@@ -6198,7 +6198,9 @@ echo ${flag ? '1' : '0'} > /sys/devices/system/cpu/cpu3/online
     const plugin_store = document.querySelector('#plugin_store_btn')
     const pluginsResultRes = []
     let timer_input = null
-    plugin_store.onclick = (e) => {
+    const PLUGIN_STORE_REPO_DEFAULT = `${KANO_baseURL}/plugins_store`
+    let plugin_store_repo = PLUGIN_STORE_REPO_DEFAULT
+    const initPluginStore = (e) => {
         //隐藏插件功能模态框
         const pluginModal = document.querySelector('#PluginModal')
         pluginModal.style.display = 'none'
@@ -6265,7 +6267,7 @@ echo ${flag ? '1' : '0'} > /sys/devices/system/cpu/cpu3/online
         const total = document.querySelector('#plugin_store .total')
         //加载插件
         pluginsResultRes.length = 0
-        fetchWithTimeout(`${KANO_baseURL}/plugins_store`)
+        fetchWithTimeout(plugin_store_repo)
             .then(res => res.json())
             .then(({ res, download_url }) => {
                 const data = res.data || {}
@@ -6387,7 +6389,16 @@ echo ${flag ? '1' : '0'} > /sys/devices/system/cpu/cpu3/online
                 console.error(err)
                 items.innerHTML = `<li style="padding:10px">${t('error_loading_plugins')}</li>`
             })
+    }
 
+    plugin_store.onclick = () => {
+        const customRepoInput = document.querySelector('#customRepoInput')
+        if (customRepoInput) {
+            customRepoInput.disabled = false
+            customRepoInput.style.opacity = 1;
+        }
+        plugin_store_repo = PLUGIN_STORE_REPO_DEFAULT
+        initPluginStore()
     }
 
     const handlePluginStoreSearchInput = (e) => {
@@ -6398,6 +6409,56 @@ echo ${flag ? '1' : '0'} > /sys/devices/system/cpu/cpu3/online
             }
         }
     }
+
+    const saveCustomRepo = (flag = false) => {
+        const customRepoInput = document.querySelector('#customRepoInput')
+        if (!customRepoInput) return
+        customRepoInput.disabled = false
+        customRepoInput.style.opacity = 1;
+        if (!customRepoInput.value || customRepoInput.value.trim() === "") {
+            localStorage.removeItem("kano_plugin_store_repo")
+            plugin_store_repo = PLUGIN_STORE_REPO_DEFAULT
+            initPluginStore()
+        } else {
+            let value = customRepoInput.value.trim()
+            if (flag) {
+                value = `/api/proxy/--${value}`
+            } else {
+                value = value.replaceAll("/api/proxy/--", "")
+            }
+            customRepoInput.value = value
+            plugin_store_repo = value
+            localStorage.setItem("kano_plugin_store_repo", value)
+            initPluginStore()
+        }
+        customRepoInput.disabled = true
+        customRepoInput.style.opacity = .5;
+    }
+
+    let customRepoResetTimer = null
+    let customRepoResetFlag = false
+    const resetCustomRepo = () => {
+        const customRepoInput = document.querySelector('#customRepoInput')
+        if (!customRepoInput) return
+        plugin_store_repo = PLUGIN_STORE_REPO_DEFAULT
+        if (customRepoResetFlag == true) return
+        customRepoResetFlag = true
+        clearTimeout(customRepoResetTimer)
+        setTimeout(() => {
+            customRepoResetFlag = false
+        }, 1000);
+        initPluginStore()
+        customRepoInput.disabled = false
+        customRepoInput.style.opacity = 1;
+    }
+
+    const initCustomRepoInput = () => {
+        const customRepoInput = document.querySelector('#customRepoInput')
+        if (!customRepoInput) return
+        const repo = localStorage.getItem("kano_plugin_store_repo") || ''
+        customRepoInput.value = repo
+    }
+    initCustomRepoInput()
 
     const handleForceIMEI = async () => {
         if (!await checkAdvancedFunc()) return createToast(t("need_advance_func"), 'red')
@@ -7762,6 +7823,8 @@ echo ${flag ? '1' : '0'} > /sys/devices/system/cpu/cpu3/online
     // initSimCardPin()
     //挂载方法到window
     const methods = {
+        saveCustomRepo,
+        resetCustomRepo,
         resetUsageModalData,
         openDataUsageHistory,
         doDataUsageHistorySearch,

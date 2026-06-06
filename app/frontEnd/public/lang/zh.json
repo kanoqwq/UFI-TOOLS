@@ -836,5 +836,7 @@
     "wake_lock_disabled": "禁用唤醒锁",
     "plugin_post_request_toast": "你也可以手动发送邮件至 <b style=\"pointer-events: all;color:pink\" onclick=\"copyText(event)\">plugin@kano.ink</b> 投稿您的插件",
     "plugin_post_request_toast_title": "投稿插件",
-    "plugin_post_request": "[UFI插件投稿] 请求投稿插件"
+    "plugin_post_request": "[UFI插件投稿] 请求投稿插件",
+    "plugin_set_repo_save":"加载",
+    "custom_plugin_repo":"自定义插件源地址"
 }

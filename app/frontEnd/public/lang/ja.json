@@ -835,5 +835,7 @@
     "wake_lock_disabled": "wakelock off",
     "plugin_post_request_toast": "プラグイン投稿は <b style=\"pointer-events: all;color:pink\" onclick=\"copyText(event)\">plugin@kano.ink</b> へメールでも可能です",
     "plugin_post_request_toast_title": "プラグイン投稿",
-    "plugin_post_request": "[UFIプラグイン投稿] プラグイン投稿申請"
+    "plugin_post_request": "[UFIプラグイン投稿] プラグイン投稿申請",
+    "plugin_set_repo_save": "読込",
+    "custom_plugin_repo": "カスタムプラグイン元"
 }

@@ -1337,6 +1337,17 @@
                             style="color: rgb(255, 162, 0);">请注意，安装插件可能会影响设备性能和稳定性，请谨慎选择。</span><br>
                         <span data-i18n="plugin_store_tip2">有些插件需要开启高级功能才可以使用。</span>
                     </div>
+                    <div id="switchRepoBox" style="margin-bottom: 6px;display: flex;gap: 10px;">
+                        <input type="text" style="flex: 1;width: 100%;box-sizing: border-box;padding: 6px;"
+                            placeholder="自定义插件源地址" data-i18n-placeholder="custom_plugin_repo" id="customRepoInput"
+                            style="padding: 4px; margin-left: 10px;">
+                        <button style="width: fit-content;min-width: 50px;" data-i18n="plugin_search_reset_btn"
+                            onclick="resetCustomRepo()">重置</button>
+                        <button style="width: fit-content;min-width: 50px;" data-i18n="plugin_set_repo_save"
+                            onclick="saveCustomRepo()">加载</button>
+                        <button style="width: fit-content;min-width: 50px;" onclick="saveCustomRepo(true)"><span
+                                data-i18n="plugin_set_repo_save">加载</span> (proxy)</button>
+                    </div>
                     <div class="searchBox">
                         <div class="searchInput">
                             <input onkeyup="handlePluginStoreSearchInput(event)" type="text" placeholder="搜索插件"
