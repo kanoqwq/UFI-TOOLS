@@ -831,6 +831,9 @@
     "please_input_correct_date": "End date cannot be in future",
     "start_date_not_bigger_than_end_date": "Start date cannot exceed end date",
     "date_range_over_400": "Date range cannot exceed 400 days",
-    "wake_lock_enabled":"wakelock on",
-    "wake_lock_disabled":"wakelock off"
+    "wake_lock_enabled": "wakelock on",
+    "wake_lock_disabled": "wakelock off",
+    "plugin_post_request_toast": "You can also manually email <b style=\"pointer-events: all;color:pink\" onclick=\"copyText(event)\">plugin@kano.ink</b> to submit your plugin",
+    "plugin_post_request_toast_title": "Submit Plugin",
+    "plugin_post_request": "[UFI Plugin Submission] Plugin Submission Request"
 }

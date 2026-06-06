@@ -7649,6 +7649,17 @@ echo ${flag ? '1' : '0'} > /sys/devices/system/cpu/cpu3/online
         })
     }
 
+    const pluginSubmitBtn = document.querySelector('#pluginSubmitBtn')
+    if (pluginSubmitBtn) {
+        pluginSubmitBtn.onclick = () => {
+            createToast(t('plugin_post_request_toast'), '', 8000)
+            const to = "plugin@kano.ink";
+            const subject = t('plugin_post_request');
+            window.location.href =
+                `mailto:${to}?subject=${encodeURIComponent(subject)}`;
+        }
+    }
+
     //官方后台貌似对PIN超出次数的判定有问题，PIN次数用完后提示输入PUK，此时换卡也不会变更状态，用户只能恢复出厂设置，所以此功能不会继续实现
     // let simCardPinDisabled = false
     // const initSimCardPin = async () => {

@@ -831,6 +831,9 @@
     "please_input_correct_date": "Không thể chọn ngày tương lai",
     "start_date_not_bigger_than_end_date": "Ngày bắt đầu không lớn hơn ngày kết thúc",
     "date_range_over_400": "Khoảng ngày không vượt quá 400 ngày",
-    "wake_lock_enabled":"wakelock on",
-    "wake_lock_disabled":"wakelock off"
+    "wake_lock_enabled": "wakelock on",
+    "wake_lock_disabled": "wakelock off",
+    "plugin_post_request_toast": "Bạn cũng có thể gửi email tới <b style=\"pointer-events: all;color:pink\" onclick=\"copyText(event)\">plugin@kano.ink</b> để gửi plugin",
+    "plugin_post_request_toast_title": "Gửi plugin",
+    "plugin_post_request": "[Gửi plugin UFI] Yêu cầu gửi plugin"
 }

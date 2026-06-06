@@ -192,6 +192,7 @@ suspend fun readThermalZones(): Pair<Int, String> = withContext(Dispatchers.IO) 
                     !sensorType.contains("usb") &&
                     !sensorType.contains("bcl") &&
                     !sensorType.contains("interface") &&
+                    !sensorType.contains("skin") &&
                     !sensorType.contains("back")
                 ) {
                     zones.add(ThermalZone(sensorType, tempValue))

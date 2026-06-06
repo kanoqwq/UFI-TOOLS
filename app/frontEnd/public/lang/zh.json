@@ -832,6 +832,9 @@
     "please_input_correct_date": "无法前往未来，请输入正确结束日期",
     "start_date_not_bigger_than_end_date": "起始日期不能大于结束日期",
     "date_range_over_400": "日期范围不能超过400天",
-    "wake_lock_enabled":"启用唤醒锁",
-    "wake_lock_disabled":"禁用唤醒锁"
+    "wake_lock_enabled": "启用唤醒锁",
+    "wake_lock_disabled": "禁用唤醒锁",
+    "plugin_post_request_toast": "你也可以手动发送邮件至 <b style=\"pointer-events: all;color:pink\" onclick=\"copyText(event)\">plugin@kano.ink</b> 投稿您的插件",
+    "plugin_post_request_toast_title": "投稿插件",
+    "plugin_post_request": "[UFI插件投稿] 请求投稿插件"
 }

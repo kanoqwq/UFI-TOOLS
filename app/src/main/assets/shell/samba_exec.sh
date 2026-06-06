@@ -265,7 +265,7 @@ permission_keep(){
     settings put secure enabled_notification_listeners com.minikano.f50_sms/com.minikano.f50_sms.MyListenerService >/dev/null 2>&1 || true
     dumpsys deviceidle whitelist +com.minikano.f50_sms >/dev/null 2>&1 || true
     cmd app_hibernation set-state com.minikano.f50_sms false >/dev/null 2>&1 || true
-
+    settings put global stay_on_while_plugged_in 0
     echo "[`date`] permission_keep done!" >> "$LOG_FILE"
 }
 
