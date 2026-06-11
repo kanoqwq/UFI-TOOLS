@@ -271,23 +271,50 @@ object SmsPoll {
         dingTalkClient.sendMessage(messageContent)
     }
 
-    fun getLatestSms(context: Context): SmsInfo? {
-        val uri = Uri.parse("content://sms/inbox")
-        val projection = arrayOf("address", "body", "date")
-        val sortOrder = "date DESC"
+    private val SMS_INBOX_URI: Uri = Uri.parse("content://sms/inbox")
+        .buildUpon()
+        .appendQueryParameter("limit", "1")
+        .build()
 
+    private var lastSmsId: Long = -1L
+
+    fun getLatestSms(context: Context): SmsInfo? {
         return try {
-            val cursor = context.contentResolver.query(uri, projection, null, null, sortOrder)
-            cursor?.use {
-                if (it.moveToFirst()) {
-                    val address = it.getString(it.getColumnIndexOrThrow("address"))
-                    val body = it.getString(it.getColumnIndexOrThrow("body"))
-                    val date = it.getLong(it.getColumnIndexOrThrow("date"))
-                    SmsInfo(address, body, date)
+            val resolver = context.contentResolver
+
+            val latestId = resolver.query(
+                SMS_INBOX_URI,
+                arrayOf("_id"),
+                null,
+                null,
+                "date DESC"
+            )?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    cursor.getLong(cursor.getColumnIndexOrThrow("_id"))
+                } else null
+            } ?: return null
+
+            if (latestId == lastSmsId) return null
+
+            resolver.query(
+                Uri.parse("content://sms/inbox"),
+                arrayOf("address", "body", "date"),
+                "_id=?",
+                arrayOf(latestId.toString()),
+                null
+            )?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    lastSmsId = latestId
+
+                    SmsInfo(
+                        address = cursor.getString(cursor.getColumnIndexOrThrow("address")),
+                        body = cursor.getString(cursor.getColumnIndexOrThrow("body")),
+                        timestamp = cursor.getLong(cursor.getColumnIndexOrThrow("date"))
+                    )
                 } else null
             }
         } catch (e: Exception) {
-            KanoLog.e(TAG, "没有短信权限，读不到短信呢", e)
+            KanoLog.e(TAG, "读取最新短信失败", e)
             null
         }
     }

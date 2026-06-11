@@ -33,6 +33,10 @@ import com.minikano.f50_sms.configs.AppMeta.updateIsDefaultOrWeakToken
 import com.minikano.f50_sms.utils.SmsPoll.forwardByEmail
 import com.minikano.f50_sms.utils.SmsPoll.forwardSmsByCurl
 import com.minikano.f50_sms.utils.SmsPoll.forwardSmsByDingTalk
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.double
 import kotlinx.serialization.json.jsonObject
@@ -353,6 +357,79 @@ class KanoUtils {
             val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
             val clip = ClipData.newPlainText(label, text)
             clipboard.setPrimaryClip(clip)
+        }
+
+        fun runAT(context: Context,command: String, slot:Int = 0): String{
+            val outFileAt = KanoUtils.copyFileToFilesDir(context, "shell/sendat")
+                ?: throw Exception("复制 sendat 到 filesDir 失败")
+            outFileAt.setExecutable(true)
+
+            val atCommand = "${outFileAt.absolutePath} -n $slot -c '${command.trim()}'"
+            val result = ShellKano.runShellCommand(atCommand, true)
+                ?: throw Exception("AT 指令没有输出")
+            var res = result
+                .replace("\"", "\\\"") // 转义引号
+                .replace("\n", "")
+                .replace("\r", "")
+                .trimStart()
+
+            if (res.lowercase().endsWith("ok")) {
+                res = res.dropLast(2).trimEnd() + " OK"
+            }
+            if (res.startsWith(",")) {
+                res = res.removePrefix(",").trimStart()
+            }
+            return res
+        }
+
+        fun getVoNrState(context:Context, slotId: Int = 0): Boolean {
+            val raw = runAT(context, "AT+SP5GCMDS=\"get nr synch_param\",42",slotId)
+
+            val body = raw
+                .substringBefore("OK")
+                .substringAfter(":", "")
+                .replace("\"", "")
+                .replace("\r", " ")
+                .replace("\n", " ")
+                .trim()
+
+            val state = body
+                .split(",")
+                .map { it.trim() }
+                .getOrNull(2)
+                ?.toIntOrNull()
+                ?: throw IllegalStateException("Unexpected VoNR response: $raw")
+
+            return state == 1
+        }
+
+        fun getVoLteState(context: Context, slotId: Int = 0): Boolean {
+            val raw = runAT(context, "AT+CAVIMS?",slotId)
+
+            val body = raw
+                .substringBefore("OK")
+                .substringAfter(":", "")
+                .replace("\"", "")
+                .replace("\r", " ")
+                .replace("\n", " ")
+                .trim()
+
+            val state = body
+                .split(",")
+                .map { it.trim() }
+                .getOrNull(0)
+                ?.toIntOrNull()
+                ?: throw IllegalStateException("Unexpected VoLte response: $raw")
+
+            return state == 1
+        }
+
+        fun setVoNrState(context: Context,state:String, slotId: Int = 0): Boolean {
+            return runAT(context, "AT+SP5GCMDS=\"set nr param\",45,$state", slotId).contains("OK")
+        }
+
+        fun setVoLteState(context: Context,state:String, slotId: Int = 0): Boolean {
+            return runAT(context, "AT+CAVIMS=$state", slotId).contains("OK")
         }
 
         fun copyFileToFilesDir(
@@ -860,6 +937,76 @@ class KanoUtils {
             }
             return catchedFlowMonth
         }
+
+        fun isNetworkEnable(context: Context): Boolean{
+            var res = false
+            try {
+                runBlocking {
+                    val sharedPrefs =
+                        context.getSharedPreferences("kano_ZTE_store", Context.MODE_PRIVATE)
+                    val ADB_IP =
+                        sharedPrefs.getString("gateway_ip", "192.168.0.1:8080")?.substringBefore(":")
+                    val req = KanoGoformRequest("http://$ADB_IP:8080")
+                    val result = req.getData(mapOf(
+                        "cmd" to "ppp_status"
+                    ))
+                    res =  result?.getString("ppp_status") == "ppp_disconnected"
+                }
+            } catch (e: Exception) {
+                Log.e("UFI_TOOLS_LOG", "查询官方后台流量使用情况执行错误: ${e.message}")
+                res = false
+            }
+            return res
+        }
+
+        fun setNetworkEnable(context: Context,flag: Boolean) {
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    val sharedPrefs =
+                        context.getSharedPreferences("kano_ZTE_store", Context.MODE_PRIVATE)
+
+                    val adbIp = sharedPrefs
+                        .getString("gateway_ip", "192.168.0.1:8080")
+                        ?.substringBefore(":")
+                        ?: run {
+                            KanoLog.e("UFI_TOOLS_LOG", "gateway_ip为空")
+                            return@launch
+                        }
+
+                    val adminPwd =
+                        sharedPrefs.getString("ADMIN_PWD", "Wa@9w+YWRtaW4=")
+                            ?: "Wa@9w+YWRtaW4="
+
+                    val req = KanoGoformRequest("http://$adbIp:8080")
+
+                    val cookie = req.login(adminPwd)
+
+                    if (cookie == null) {
+                        KanoLog.e("UFI_TOOLS_LOG", "登录后台失败")
+                        return@launch
+                    }
+
+                    val result = req.postData(
+                        cookie,
+                        mapOf(
+                            "goformId" to if(!flag)"DISCONNECT_NETWORK" else "CONNECT_NETWORK"
+                        )
+                    )
+
+                    KanoLog.d(
+                        "UFI_TOOLS_LOG",
+                        if(!flag) "尝试关闭数据连接：$result" else "尝试打开数据连接：$result"
+                    )
+                } catch (e: Exception) {
+                    KanoLog.e(
+                        "UFI_TOOLS_LOG",
+                        "setNetworkEnable执行错误",
+                        e
+                    )
+                }
+            }
+        }
+
         fun buildStatusSmsMsg(text:String,context: Context,TAG:String): String {
             if(text.isBlank()) return text
             var replacedCurl = text
@@ -992,9 +1139,59 @@ class KanoUtils {
                         forwardSmsByDingTalk(smsContent, context)
                     }
                 }
-                KanoLog.d("UFI_TOOLS_LOG_LowBatteryForward","低电量转发消息成功，转发类型:$sms_forward_method")
+                KanoLog.d("UFI_TOOLS_LOG_LowBatteryForward","转发消息成功，转发类型:$sms_forward_method")
             } catch (e: Exception){
-                KanoLog.e("UFI_TOOLS_LOG_LowBatteryForward","低电量转发消息(forwardLowBatteryMessage)出错：",e)
+                KanoLog.e("UFI_TOOLS_LOG_LowBatteryForward","转发消息(forwardLowBatteryMessage)出错：",e)
+            }
+        }
+
+        private fun forwardMessage(message:String,title:String,context: Context){
+            val sharedPrefs = context.getSharedPreferences("kano_ZTE_store", Context.MODE_PRIVATE)
+            val isEnabledStatusForward =
+                (sharedPrefs.getString("kano_data_limit_status_forward_enabled", "0") ?: "0") == "1"
+            val isSMSForwardEnabled = sharedPrefs.getString("kano_sms_forward_enabled", "0") == "1"
+            if (isEnabledStatusForward && isSMSForwardEnabled) {
+                forwardBatteryStatusMessage(context,SmsInfo(title,
+                    message , System.currentTimeMillis()))
+            }
+        }
+
+        //检测流量是否超出阈值，超出断网
+        fun checkAndDoDataLimitReachedAction(context: Context) {
+            KanoLog.d("UFI_TOOLS_LOG_UFIDataManager","开始检查流量超限情况.....")
+            //判断日限 or 月限
+            val dataCheckType = AppMeta.dataFlowCheckDailyOrMonthly
+            //超量检测判断依据
+            val dataFlow = if(dataCheckType == "monthly") {
+                when(AppMeta.dataFlowCheckRef) {
+                    "android" -> getCachedMonthlyUsage(context)
+                    else -> getCatchedFlowMonth(context)
+                }
+            } else {
+                getCachedTodayUsage(context)
+            }
+            //总流量
+            val maxValue = AppMeta.dataFlowMaxValue
+            KanoLog.d("UFI_TOOLS_LOG_UFIDataManager","dataFlowMaxValue:${AppMeta.dataFlowMaxValue} dataFlowCheckRef:${AppMeta.dataFlowCheckRef} dataCheckType:$dataCheckType")
+            if(maxValue <= 0) return
+            if(maxValue - dataFlow <= 1024){
+                //查询是否已经断网
+                if(isNetworkEnable(context)) return
+                CoroutineScope(Dispatchers.IO).launch {
+                    forwardMessage(
+      """
+                流量达到设定值：(${maxValue.toReadableSize()})，即将断网！
+                Data limit exceeded (${maxValue.toReadableSize()}). Disconnecting network!
+                """.trimIndent()
+                        ,"【流量限制】${AppMeta.nickName}",context)
+                    delay(3000)
+                    //断网
+                    setNetworkEnable(context, false)
+                    AppMeta.isReachedDataFlowLimit = true
+                }
+                KanoLog.d("UFI_TOOLS_LOG_UFIDataManager","流量达到阈值${maxValue}-${dataFlow} <= 1024, 执行断网")
+            } else {
+                AppMeta.isReachedDataFlowLimit = false
             }
         }
     }

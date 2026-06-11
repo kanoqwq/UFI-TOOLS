@@ -3,7 +3,6 @@ package com.minikano.f50_sms.modules.config
 import android.content.Context
 import com.minikano.f50_sms.modules.BASE_TAG
 import com.minikano.f50_sms.utils.KanoLog
-import com.minikano.f50_sms.utils.KanoRequest
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.call
@@ -215,4 +214,95 @@ fun Route.configModule(context: Context) {
             )
         }
     }
+
+    //设置流量阈值与断网开关
+    post("/api/set_data_limit") {
+        try {
+            val body = call.receiveText()
+            val json = JSONObject(body)
+
+            val dataFlowEnabled = if (
+                json.optString("data_flow_limit_enabled", "0") == "1" ||
+                json.optBoolean("data_flow_limit_enabled", false)
+            ) "1" else "0"
+            val dataFlowNoticeEnabled = if (
+                json.optString("data_limit_status_forward_enabled", "0") == "1" ||
+                json.optBoolean("data_limit_status_forward_enabled", false)
+            ) "1" else "0"
+
+            var dataFlowMaxLimit = json.optLong("data_flow_max_limit", -1L)
+            var flowType = json.optString("data_flow_check_daily_or_monthly", "monthly")
+            var dataReference = json.optString("data_check_reference", "default")
+
+            if (dataFlowMaxLimit <= 0) {
+                dataFlowMaxLimit = -1L
+            }
+
+            if (flowType != "daily") {
+                flowType = "monthly"
+            }
+
+            dataReference = when (dataReference) {
+                "android", "ufi" -> "android"
+                else -> "default"
+            }
+
+            KanoLog.d(TAG, "接收到 data_flow_limit_enabled=$dataFlowEnabled")
+            KanoLog.d(TAG, "接收到 data_flow_max_limit=$dataFlowMaxLimit")
+            KanoLog.d(TAG, "接收到 data_flow_check_daily_or_monthly=$flowType")
+            KanoLog.d(TAG, "接收到 data_check_reference=$dataReference")
+            KanoLog.d(TAG, "接收到 data_limit_status_forward_enabled=$dataFlowNoticeEnabled")
+
+            AppMeta.setIsDataFlowLimitEnabled(context, dataFlowEnabled == "1")
+            AppMeta.setDataFlowCheckDailyOrMonthly(context, flowType)
+            AppMeta.setDataFlowCheckRef(context, dataReference)
+            AppMeta.setDataFlowMaxValue(context, dataFlowMaxLimit)
+            val sharedPrefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            //持久化
+            sharedPrefs.edit(commit = true) {
+                putString("kano_data_limit_status_forward_enabled",dataFlowNoticeEnabled)
+            }
+
+            call.response.headers.append("Access-Control-Allow-Origin", "*")
+            call.respondText(
+                """{"result":"success"}""",
+                ContentType.Application.Json,
+                HttpStatusCode.OK
+            )
+        } catch (e: Exception) {
+            KanoLog.d(TAG, "设置 set_data_limit 出错：${e.message}")
+            call.response.headers.append("Access-Control-Allow-Origin", "*")
+            call.respondText(
+                """{"error":"${e.message ?: "未知错误"}"}""",
+                ContentType.Application.Json,
+                HttpStatusCode.InternalServerError
+            )
+        }
+    }
+
+    //获取流量阈值开关
+    get("/api/get_data_limit") {
+        try {
+            val sharedPrefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            // 拼装 JSON 响应
+            val resultJson = JSONObject()
+                .put("data_flow_limit_enabled",if(AppMeta.isDataFlowLimitEnabled) "1" else "0")
+                .put("data_flow_max_limit",AppMeta.dataFlowMaxValue)
+                .put("data_flow_check_daily_or_monthly",AppMeta.dataFlowCheckDailyOrMonthly)
+                .put("data_check_reference",AppMeta.dataFlowCheckRef)
+                .put("data_limit_status_forward_enabled",sharedPrefs.getString("kano_data_limit_status_forward_enabled","0"))
+
+            call.response.headers.append("Access-Control-Allow-Origin", "*")
+            call.respondText(resultJson.toString(), ContentType.Application.Json, HttpStatusCode.OK)
+        } catch (e: Exception) {
+            KanoLog.d(TAG, "请求出错：${e.message}")
+            call.response.headers.append("Access-Control-Allow-Origin", "*")
+            call.respondText(
+                """{"error":"请求出错"}""",
+                ContentType.Application.Json,
+                HttpStatusCode.InternalServerError
+            )
+        }
+    }
+
 }

@@ -837,5 +837,19 @@
     "plugin_post_request_toast_title": "プラグイン投稿",
     "plugin_post_request": "[UFIプラグイン投稿] プラグイン投稿申請",
     "plugin_set_repo_save": "読込",
-    "custom_plugin_repo": "カスタムプラグイン元"
+    "custom_plugin_repo": "カスタムプラグイン元",
+    "disconnect_network_data_value": "通信停止量：",
+    "ufi_back": "UFI",
+    "official_back": "公式",
+    "with_monthly_flow": "月間",
+    "with_daily_flow": "日間",
+    "count_method": "集計方式：",
+    "enable_ufi_data_management": "UFI通信量管理",
+    "official_data_management": "公式通信量管理",
+    "ufi_data_management": "UFI通信量管理",
+    "data_flow_limit_reached": "通信量超過、通信を停止しました！",
+    "data_flow_max_limit_must_be_number": "通信量は数値で入力してください！",
+    "data_flow_max_limit_must_greater_than_0": "通信量は0より大きくしてください！",
+    "data_ref": "通信量参照",
+    "data_limit_status_forward_notify": "通信停止時に通知する？（SMS転送必須）"
 }

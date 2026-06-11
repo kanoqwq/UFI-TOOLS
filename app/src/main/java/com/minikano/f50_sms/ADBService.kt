@@ -13,12 +13,18 @@ import android.os.HandlerThread
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.core.content.edit
 import com.minikano.f50_sms.configs.AppMeta
+import com.minikano.f50_sms.modules.PREFS_NAME
 import com.minikano.f50_sms.utils.BatteryReceiver
 import com.minikano.f50_sms.utils.KanoLog
 import com.minikano.f50_sms.utils.KanoReport.Companion.reportToServer
 import com.minikano.f50_sms.utils.KanoUtils
+import com.minikano.f50_sms.utils.KanoUtils.Companion.getVoLteState
 import com.minikano.f50_sms.utils.KanoUtils.Companion.isUsbDebuggingEnabled
+import com.minikano.f50_sms.utils.KanoUtils.Companion.runAT
+import com.minikano.f50_sms.utils.KanoUtils.Companion.setVoLteState
+import com.minikano.f50_sms.utils.KanoUtils.Companion.setVoNrState
 import com.minikano.f50_sms.utils.ShellKano
 import com.minikano.f50_sms.utils.ShellKano.Companion.executeShellFromAssetsSubfolderWithArgs
 import com.minikano.f50_sms.utils.ShellKano.Companion.killProcessByName
@@ -55,9 +61,18 @@ class ADBService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         startForeground(1234599, createNotification())
 
-        handlerThread = HandlerThread("KanoBackgroundHandler")
-        handlerThread.start()
-        handler = Handler(handlerThread.looper)
+        if (!::handlerThread.isInitialized || !handlerThread.isAlive) {
+            handlerThread = HandlerThread("KanoBackgroundHandler").apply {
+                start()
+            }
+            handler = Handler(handlerThread.looper)
+        }
+
+        handler.removeCallbacks(runnableSMSAndDataFlowCheck)
+        handler.removeCallbacks(runnableSMB)
+        handler.removeCallbacks(runnableRPT)
+        handler.removeCallbacks(runnableAT)
+
         // 串行执行任务
         handler.post {
             resetFilesFromAssets(applicationContext)
@@ -65,10 +80,11 @@ class ADBService : Service() {
             // 等文件拷贝完成后再继续
             startAdbKeepAliveTask(applicationContext)
             startIperfTask(applicationContext)
-            val executor = Executors.newFixedThreadPool(3)
-            executor.execute(runnableSMS)
-            executor.execute(runnableSMB)
-            executor.execute(runnableRPT)
+
+            handler.post(runnableSMSAndDataFlowCheck)
+            handler.post(runnableSMB)
+            handler.post(runnableRPT)
+            handler.post(runnableAT)
             //订阅电池事件接收器
             registerBatteryReceiver()
         }
@@ -76,6 +92,50 @@ class ADBService : Service() {
         //开启定时任务
         TaskSchedulerManager.init(applicationContext)
         return START_STICKY
+    }
+
+    private fun pingAT(): String {
+        return runAT(applicationContext,"AT",0)
+    }
+
+    private val runnableAT = object : Runnable {
+        override fun run() {
+            try {
+                KanoLog.d(TAG, "---------------等待AT服务可用中---------------")
+
+                if (!pingAT().contains("OK")) {
+                    KanoLog.d(TAG, "AT还未准备好，1秒后重试...")
+                    handler.postDelayed(this, 1_000)
+                    return
+                }
+                KanoLog.d(TAG, "===============正在执行自启动AT指令===============")
+
+                val sharedPrefs = applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+
+                if(sharedPrefs.getString("volte_status_0","0") == "1") {
+                    val res = setVoLteState(applicationContext, "1", 0)
+                    KanoLog.d(TAG, "setVoLteState:$res slot=0")
+                }
+                if(sharedPrefs.getString("volte_status_1","0") == "1") {
+                    val res = setVoLteState(applicationContext, "1", 1)
+                    KanoLog.d(TAG, "setVoLteState:$res slot=1")
+                }
+
+                if(sharedPrefs.getString("vonr_status_0","0") == "1") {
+                    val res = setVoNrState(applicationContext, "1", 0)
+                    KanoLog.d(TAG, "setVoNrState:$res slot=0")
+                }
+                if(sharedPrefs.getString("vonr_status_1","0") == "1") {
+                    val res = setVoNrState(applicationContext, "1", 1)
+                    KanoLog.d(TAG, "setVoNrState:$res slot=1")
+                }
+
+                KanoLog.d(TAG, "===============自启动AT指令执行完成===============")
+            } catch (e: Exception) {
+                KanoLog.e(TAG, "执行自启动AT指令错误：", e)
+                handler.postDelayed(this, 1_500)
+            }
+        }
     }
 
     private fun registerBatteryReceiver(){
@@ -156,7 +216,7 @@ class ADBService : Service() {
         }
     }
 
-    private val runnableSMS = object : Runnable {
+    private val runnableSMSAndDataFlowCheck = object : Runnable {
         override fun run() {
             val sharedPrefs = getSharedPreferences("kano_ZTE_store", Context.MODE_PRIVATE)
             if (sharedPrefs.getString("kano_sms_forward_enabled", "0") == "1") {
@@ -166,7 +226,14 @@ class ADBService : Service() {
                     KanoLog.e(TAG, "读取短信时发生错误", e)
                 }
             }
-            handler.postDelayed(this, 5000)
+            if (sharedPrefs.getString("kano_data_flow_limit_enabled", "0") == "1") {
+                try {
+                    KanoUtils.checkAndDoDataLimitReachedAction(applicationContext)
+                } catch (e: Exception) {
+                    KanoLog.e(TAG, "runnableSMSAndDataFlowCheck->checkAndDoDataLimitReachedAction发生错误", e)
+                }
+            }
+            handler.postDelayed(this, 8000)
         }
     }
 

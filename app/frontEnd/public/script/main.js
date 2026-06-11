@@ -838,6 +838,7 @@ function main_func() {
     let StopStatusRenderTimer = null
     let isNotLoginOnce = true
     let status_login_try_times = 0
+    let data_limit_toast_shown = false
     let handlerStatusRender = async (flag = false) => {
         const status = document.querySelector('#STATUS')
         if (flag) {
@@ -870,6 +871,10 @@ function main_func() {
             return
         }
         if (res) {
+            if (res.is_reached_data_flow_limit && !data_limit_toast_shown) {
+                createToast(t("data_flow_limit_reached", "pink", 8000))
+                data_limit_toast_shown = true
+            }
             //需要一直保持登录
             if (res.loginfo && res.loginfo != 'ok') {
                 try {
@@ -2042,75 +2047,78 @@ function main_func() {
     })
 
     //流量管理逻辑
-    document.querySelector("#DataManagement").onclick = async () => {
-        if (!(await initRequestData())) {
-            createToast(t('toast_please_login'), 'red')
-            out()
-            return null
-        }
-        // 查流量使用情况
-        let res = await getDataUsage()
-        if (!res) {
-            createToast(t('toast_get_data_usage_failed'), 'red')
-            return null
-        }
-
-        res = {
-            ...res,
-            "wan_auto_clear_flow_data_switch": isNullOrUndefiend(res.wan_auto_clear_flow_data_switch) ? res.wan_auto_clear_flow_data_switch : res.flux_auto_clear_flow_data_switch,
-            "data_volume_limit_unit": isNullOrUndefiend(res.data_volume_limit_unit) ? res.data_volume_limit_unit : res.flux_data_volume_limit_unit,
-            "data_volume_limit_size": isNullOrUndefiend(res.data_volume_limit_size) ? res.data_volume_limit_size : res.flux_data_volume_limit_size,
-            "traffic_clear_date": isNullOrUndefiend(res.traffic_clear_date) ? res.traffic_clear_date : res.flux_clear_date,
-            "data_volume_alert_percent": isNullOrUndefiend(res.data_volume_alert_percent) ? res.data_volume_alert_percent : res.flux_data_volume_alert_percent,
-            "data_volume_limit_switch": isNullOrUndefiend(res.data_volume_limit_switch) ? res.data_volume_limit_switch : res.flux_data_volume_limit_switch,
-        }
-
-        // 预填充表单
-        const form = document.querySelector('#DataManagementForm')
-        if (!form) return null
-        let data_volume_limit_switch = form.querySelector('input[name="data_volume_limit_switch"]')
-        let wan_auto_clear_flow_data_switch = form.querySelector('input[name="wan_auto_clear_flow_data_switch"]')
-        let data_volume_limit_unit = form.querySelector('input[name="data_volume_limit_unit"]')
-        let traffic_clear_date = form.querySelector('input[name="traffic_clear_date"]')
-        let data_volume_alert_percent = form.querySelector('input[name="data_volume_alert_percent"]')
-        let data_volume_limit_size = form.querySelector('input[name="data_volume_limit_size"]')
-        let data_volume_limit_type = form.querySelector('select[name="data_volume_limit_type"]')
-        let data_volume_used_size = form.querySelector('input[name="data_volume_used_size"]')
-        let data_volume_used_type = form.querySelector('select[name="data_volume_used_type"]')
-
-        // (12094630728720/1024/1024)/1048576
-        let used_size_type = 1
-        const used_size = (() => {
-            const total_bytes = ((Number(res.monthly_rx_bytes) + Number(res.monthly_tx_bytes))) / Math.pow(1024, 2)
-
-            if (total_bytes < 1024) {
-                return total_bytes.toFixed(2)
-            } else if (total_bytes >= 1024 && total_bytes < Math.pow(1024, 2)) {
-                used_size_type = 1024
-                return (total_bytes / 1024).toFixed(2)
-            } else {
-                used_size_type = Math.pow(1024, 2)
-                return (total_bytes / Math.pow(1024, 2)).toFixed(2)
+    document.querySelector("#DataManagement").onclick = () => {
+        (async () => {
+            if (!(await initRequestData())) {
+                createToast(t('toast_please_login'), 'red')
+                out()
+                return null
             }
-        })()
+            // 查流量使用情况
+            let res = await getDataUsage()
+            if (!res) {
+                createToast(t('toast_get_data_usage_failed'), 'red')
+                return null
+            }
 
-        data_volume_limit_switch && (data_volume_limit_switch.checked = res.data_volume_limit_switch.toString() == '1')
-        wan_auto_clear_flow_data_switch && (wan_auto_clear_flow_data_switch.checked = res.wan_auto_clear_flow_data_switch.toString() == 'on')
-        data_volume_limit_unit && (data_volume_limit_unit.checked = res.data_volume_limit_unit.toString() == 'data')
-        traffic_clear_date && (traffic_clear_date.value = res.traffic_clear_date.toString())
-        data_volume_alert_percent && (data_volume_alert_percent.value = res.data_volume_alert_percent.toString())
-        data_volume_limit_size && (data_volume_limit_size.value = res.data_volume_limit_size?.split('_')[0].toString())
-        data_volume_limit_type && (() => {
-            const val = Number(res.data_volume_limit_size?.split('_')[1])
-            const option = data_volume_limit_type.querySelector(`option[data-value="${val}"]`)
-            option && (option.selected = true)
+            res = {
+                ...res,
+                "wan_auto_clear_flow_data_switch": isNullOrUndefiend(res.wan_auto_clear_flow_data_switch) ? res.wan_auto_clear_flow_data_switch : res.flux_auto_clear_flow_data_switch,
+                "data_volume_limit_unit": isNullOrUndefiend(res.data_volume_limit_unit) ? res.data_volume_limit_unit : res.flux_data_volume_limit_unit,
+                "data_volume_limit_size": isNullOrUndefiend(res.data_volume_limit_size) ? res.data_volume_limit_size : res.flux_data_volume_limit_size,
+                "traffic_clear_date": isNullOrUndefiend(res.traffic_clear_date) ? res.traffic_clear_date : res.flux_clear_date,
+                "data_volume_alert_percent": isNullOrUndefiend(res.data_volume_alert_percent) ? res.data_volume_alert_percent : res.flux_data_volume_alert_percent,
+                "data_volume_limit_switch": isNullOrUndefiend(res.data_volume_limit_switch) ? res.data_volume_limit_switch : res.flux_data_volume_limit_switch,
+            }
+
+            // 预填充表单
+            const form = document.querySelector('#DataManagementForm')
+            if (!form) return null
+            let data_volume_limit_switch = form.querySelector('input[name="data_volume_limit_switch"]')
+            let wan_auto_clear_flow_data_switch = form.querySelector('input[name="wan_auto_clear_flow_data_switch"]')
+            let data_volume_limit_unit = form.querySelector('input[name="data_volume_limit_unit"]')
+            let traffic_clear_date = form.querySelector('input[name="traffic_clear_date"]')
+            let data_volume_alert_percent = form.querySelector('input[name="data_volume_alert_percent"]')
+            let data_volume_limit_size = form.querySelector('input[name="data_volume_limit_size"]')
+            let data_volume_limit_type = form.querySelector('select[name="data_volume_limit_type"]')
+            let data_volume_used_size = form.querySelector('input[name="data_volume_used_size"]')
+            let data_volume_used_type = form.querySelector('select[name="data_volume_used_type"]')
+
+            // (12094630728720/1024/1024)/1048576
+            let used_size_type = 1
+            const used_size = (() => {
+                const total_bytes = ((Number(res.monthly_rx_bytes) + Number(res.monthly_tx_bytes))) / Math.pow(1024, 2)
+
+                if (total_bytes < 1024) {
+                    return total_bytes.toFixed(2)
+                } else if (total_bytes >= 1024 && total_bytes < Math.pow(1024, 2)) {
+                    used_size_type = 1024
+                    return (total_bytes / 1024).toFixed(2)
+                } else {
+                    used_size_type = Math.pow(1024, 2)
+                    return (total_bytes / Math.pow(1024, 2)).toFixed(2)
+                }
+            })()
+
+            data_volume_limit_switch && (data_volume_limit_switch.checked = res.data_volume_limit_switch.toString() == '1')
+            wan_auto_clear_flow_data_switch && (wan_auto_clear_flow_data_switch.checked = res.wan_auto_clear_flow_data_switch.toString() == 'on')
+            data_volume_limit_unit && (data_volume_limit_unit.checked = res.data_volume_limit_unit.toString() == 'data')
+            traffic_clear_date && (traffic_clear_date.value = res.traffic_clear_date.toString())
+            data_volume_alert_percent && (data_volume_alert_percent.value = res.data_volume_alert_percent.toString())
+            data_volume_limit_size && (data_volume_limit_size.value = res.data_volume_limit_size?.split('_')[0].toString())
+            data_volume_limit_type && (() => {
+                const val = Number(res.data_volume_limit_size?.split('_')[1])
+                const option = data_volume_limit_type.querySelector(`option[data-value="${val}"]`)
+                option && (option.selected = true)
+            })()
+            data_volume_used_size && (data_volume_used_size.value = used_size.toString())
+            data_volume_used_type && (() => {
+                const option = data_volume_used_type.querySelector(`option[data-value="${used_size_type.toFixed(0)}"]`)
+                option && (option.selected = true)
+            })()
+            showModal('#DataManagementModal')
         })()
-        data_volume_used_size && (data_volume_used_size.value = used_size.toString())
-        data_volume_used_type && (() => {
-            const option = data_volume_used_type.querySelector(`option[data-value="${used_size_type.toFixed(0)}"]`)
-            option && (option.selected = true)
-        })()
-        showModal('#DataManagementModal')
+        initUfiDataManagementModal();
     }
 
     //流量管理表单提交
@@ -3208,6 +3216,68 @@ function main_func() {
         }
     }
 
+    const initVoLTESwitchBtn = async () => {
+        const voLTESwitchBtn = document.querySelector('#VoLTESwitchBtn')
+        const voLTESwitchBtn1 = document.querySelector('#VoLTESwitchBtn1')
+        if (voLTESwitchBtn) {
+            try {
+                const res = await (await fetchWithTimeout(`${KANO_baseURL}/volte_status?slot=0`)).json()
+                if (res) {
+                    voLTESwitchBtn.dataset.enabled = res.enabled ? "1" : "0"
+                    voLTESwitchBtn.style.backgroundColor = res.enabled ? 'var(--dark-btn-color-active)' : ''
+                }
+            } catch (e) {
+                voLTESwitchBtn.dataset.enabled = '0'
+                voLTESwitchBtn.style.backgroundColor = ''
+                console.log('fetch volte status error', e)
+            }
+        }
+        if (voLTESwitchBtn1) {
+            try {
+                const res = await (await fetchWithTimeout(`${KANO_baseURL}/volte_status?slot=1`)).json()
+                if (res) {
+                    voLTESwitchBtn1.dataset.enabled = res.enabled ? "1" : "0"
+                    voLTESwitchBtn1.style.backgroundColor = res.enabled ? 'var(--dark-btn-color-active)' : ''
+                }
+            } catch (e) {
+                voLTESwitchBtn1.dataset.enabled = '0'
+                voLTESwitchBtn1.style.backgroundColor = ''
+                console.log('fetch volte status error', e)
+            }
+        }
+    }
+
+    const initVoNRSwitchBtn = async () => {
+        const voNRSwitchBtn = document.querySelector('#VoNRSwitchBtn')
+        const voNRSwitchBtn1 = document.querySelector('#VoNRSwitchBtn1')
+        if (voNRSwitchBtn) {
+            try {
+                const res = await (await fetchWithTimeout(`${KANO_baseURL}/vonr_status?slot=0`)).json()
+                if (res) {
+                    voNRSwitchBtn.dataset.enabled = res.enabled ? "1" : "0"
+                    voNRSwitchBtn.style.backgroundColor = res.enabled ? 'var(--dark-btn-color-active)' : ''
+                }
+            } catch (e) {
+                voNRSwitchBtn.dataset.enabled = '0'
+                voNRSwitchBtn.style.backgroundColor = ''
+                console.log('fetch vonr status error', e)
+            }
+        }
+        if (voNRSwitchBtn1) {
+            try {
+                const res = await (await fetchWithTimeout(`${KANO_baseURL}/vonr_status?slot=1`)).json()
+                if (res) {
+                    voNRSwitchBtn1.dataset.enabled = res.enabled ? "1" : "0"
+                    voNRSwitchBtn1.style.backgroundColor = res.enabled ? 'var(--dark-btn-color-active)' : ''
+                }
+            } catch (e) {
+                voNRSwitchBtn1.dataset.enabled = '0'
+                voNRSwitchBtn1.style.backgroundColor = ''
+                console.log('fetch vonr status error', e)
+            }
+        }
+    }
+
     let initATBtn = async () => {
         const el = document.querySelector('#AT')
         if (!(await initRequestData()) || !el) {
@@ -3218,6 +3288,8 @@ function main_func() {
         el.style.backgroundColor = ''
         el.onclick = () => {
             initHighRailBtn()
+            initVoLTESwitchBtn()
+            initVoNRSwitchBtn()
             showModal('#ATModal')
         }
     }
@@ -7721,6 +7793,252 @@ echo ${flag ? '1' : '0'} > /sys/devices/system/cpu/cpu3/online
         }
     }
 
+    const handleVoLTE = async () => {
+        try {
+            const voLTESwitchBtn = document.querySelector('#VoLTESwitchBtn')
+            if (!voLTESwitchBtn) return
+
+            const res = await (await fetchWithTimeout(`${KANO_baseURL}/volte_status?slot=0`, {
+                method: "POST",
+                body: JSON.stringify({ enabled: voLTESwitchBtn.dataset.enabled == "1" ? "0" : "1" }),
+                headers: common_headers
+            })).json()
+            if (res.result == "success") {
+                createToast(t('toast_oprate_success'), 'green')
+                initVoLTESwitchBtn()
+            } else {
+                createToast(t('toast_oprate_failed'), 'red')
+            }
+        } catch (e) {
+            createToast(t('toast_oprate_failed') + e, 'red')
+        }
+    }
+
+    const handleVoLTE1 = async () => {
+        try {
+            const voLTESwitchBtn1 = document.querySelector('#VoLTESwitchBtn1')
+            if (!voLTESwitchBtn1) return
+
+            const res = await (await fetchWithTimeout(`${KANO_baseURL}/volte_status?slot=1`, {
+                method: "POST",
+                body: JSON.stringify({ enabled: voLTESwitchBtn1.dataset.enabled == "1" ? "0" : "1" }),
+                headers: common_headers
+            })).json()
+            if (res.result == "success") {
+                createToast(t('toast_oprate_success'), 'green')
+                initVoLTESwitchBtn()
+            } else {
+                createToast(t('toast_oprate_failed'), 'red')
+            }
+        } catch (e) {
+            createToast(t('toast_oprate_failed') + e, 'red')
+        }
+    }
+
+    const handleVoNR = async () => {
+        try {
+            const voNRSwitchBtn = document.querySelector('#VoNRSwitchBtn')
+            if (!voNRSwitchBtn) return
+
+            const res = await (await fetchWithTimeout(`${KANO_baseURL}/vonr_status?slot=0`, {
+                method: "POST",
+                body: JSON.stringify({ enabled: voNRSwitchBtn.dataset.enabled == "1" ? "0" : "1" }),
+                headers: common_headers
+            })).json()
+            if (res.result == "success") {
+                createToast(t('toast_oprate_success'), 'green')
+                initVoNRSwitchBtn()
+            } else {
+                createToast(t('toast_oprate_failed'), 'red')
+            }
+        } catch (e) {
+            createToast(t('toast_oprate_failed') + e, 'red')
+        }
+    }
+
+    const handleVoNR1 = async () => {
+        try {
+            const voNRSwitchBtn1 = document.querySelector('#VoNRSwitchBtn1')
+            if (!voNRSwitchBtn1) return
+
+            const res = await (await fetchWithTimeout(`${KANO_baseURL}/vonr_status?slot=1`, {
+                method: "POST",
+                body: JSON.stringify({ enabled: voNRSwitchBtn1.dataset.enabled == "1" ? "0" : "1" }),
+                headers: common_headers
+            })).json()
+            if (res.result == "success") {
+                createToast(t('toast_oprate_success'), 'green')
+                initVoNRSwitchBtn()
+            } else {
+                createToast(t('toast_oprate_failed'), 'red')
+            }
+        } catch (e) {
+            createToast(t('toast_oprate_failed') + e, 'red')
+        }
+    }
+
+    //切换流量管理
+    const switchDataMgrMethod = (method) => {
+        const dataManagementForm = document.querySelector('#DataManagementForm')
+        const uFIDataManagementForm = document.querySelector('#UFIDataManagementForm')
+        switch (method.toLowerCase()) {
+            case 'official':
+                dataManagementForm.style.display = 'block'
+                uFIDataManagementForm.style.display = 'none'
+                break
+            case 'ufi':
+                dataManagementForm.style.display = 'none'
+                uFIDataManagementForm.style.display = 'block'
+                break
+                break
+        }
+        return method.toLowerCase()
+    }
+
+    //切换流量管理tab
+    const switchDataMgrMethodTab = (e) => {
+        const target = e.target
+        if (target.tagName != 'BUTTON') return
+        const children = target.parentNode?.children
+        if (!children) return
+        Array.from(children).forEach((item) => {
+            if (item != target) {
+                item.classList.remove('active')
+            }
+        })
+        target.classList.add('active')
+        const method = target.dataset.method
+        switchDataMgrMethod(method)
+    }
+
+
+
+    //UFI流量管理逻辑
+    const initUfiDataManagementModal = async () => {
+        if (!(await initRequestData())) {
+            createToast(t('toast_please_login'), 'red')
+            out()
+            return null
+        }
+
+        const res = await (await fetchWithTimeout(`${KANO_baseURL}/get_data_limit`)).json()
+        if (!res) {
+            createToast(t('toast_get_data_usage_failed'), 'red')
+            return null
+        }
+
+        const form = document.querySelector('#UFIDataManagementForm')
+        if (!form) return null
+
+        const data_flow_limit_enabled = form.querySelector('input[name="data_flow_limit_enabled"]')
+        const data_flow_max_limit = form.querySelector('input[name="data_flow_max_limit"]')
+        const data_limit_status_forward_enabled = form.querySelector('input[name="data_limit_status_forward_enabled"]')
+
+        const data_flow_max_limit_type = form.querySelector('select[name="data_flow_max_limit_type"]')
+
+        if (data_limit_status_forward_enabled) data_limit_status_forward_enabled.checked = res.data_limit_status_forward_enabled == "1"
+
+        const bytes = Number(res.data_flow_max_limit || 0)
+
+        if (bytes <= 0) {
+            data_flow_max_limit.value = "0"
+            data_flow_max_limit_type.value = "1024"
+        } else if (bytes % (1024 ** 4) === 0) {
+            data_flow_max_limit.value = String(bytes / (1024 ** 4))
+            data_flow_max_limit_type.value = "1048576"
+        } else if (bytes % (1024 ** 3) === 0) {
+            data_flow_max_limit.value = String(bytes / (1024 ** 3))
+            data_flow_max_limit_type.value = "1024"
+        } else {
+            data_flow_max_limit.value = String(Math.floor(bytes / (1024 ** 2)))
+            data_flow_max_limit_type.value = "1"
+        }
+
+
+        data_flow_limit_enabled.checked =
+            res.data_flow_limit_enabled === true ||
+            res.data_flow_limit_enabled === "1" ||
+            res.data_flow_limit_enabled === 1
+
+        const flowType = res.data_flow_check_daily_or_monthly || "monthly"
+        const flowTypeRadio = form.querySelector(
+            `input[name="data_flow_check_daily_or_monthly"][value="${flowType}"]`
+        )
+        if (flowTypeRadio) flowTypeRadio.checked = true
+
+        const reference = res.data_check_reference == "android" ? "ufi" : "official" || "official"
+        const referenceRadio = form.querySelector(
+            `input[name="data_check_reference"][value="${reference}"]`
+        )
+        if (referenceRadio) referenceRadio.checked = true
+    }
+
+    //UFI流量管理表单提交
+    let handleUFIDataManagementFormSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            let form_data = {
+                "data_flow_limit_enabled": "0",
+                "data_flow_max_limit": -1,
+                "data_flow_check_daily_or_monthly": "monthly",
+                "data_check_reference": "default",
+                "data_limit_status_forward_enabled": "0"
+            }
+
+            const form = e.target; // 获取表单
+            const formData = new FormData(form);
+
+            const data_flow_max_limit_type = formData.get("data_flow_max_limit_type")
+
+            for (const [key, value] of formData.entries()) {
+                switch (key) {
+                    case 'data_flow_limit_enabled':
+                        form_data[key] = value.trim() == 'on' ? '1' : '0'
+                        break;
+                    case 'data_check_reference':
+                        form_data[key] = value.trim() == 'official' ? 'default' : 'android'
+                        break;
+                    case 'data_flow_check_daily_or_monthly':
+                        form_data[key] = value.trim() == 'monthly' ? 'monthly' : 'daily'
+                        break;
+                    case 'data_limit_status_forward_enabled':
+                        form_data[key] = value.trim() == 'on' ? '1' : '0'
+                        break;
+                    case 'data_flow_max_limit':
+                        if (isNaN(Number(value.trim()))) {
+                            createToast(t('data_flow_max_limit_must_be_number'), 'red')
+                            return
+                        }
+                        if (Number(value.trim()) <= 0) {
+                            createToast(t('data_flow_max_limit_must_greater_than_0'), 'red')
+                            return
+                        }
+                        form_data[key] = (Number(value.trim()) * Number(data_flow_max_limit_type) * Math.pow(1024, 2)).toFixed(3)
+                        break;
+                }
+            }
+
+            try {
+                const res = await (await fetchWithTimeout(`${KANO_baseURL}/set_data_limit`, {
+                    method: "POST",
+                    body: JSON.stringify(form_data),
+                    headers: common_headers
+                })).json()
+
+                if (res.result == 'success') {
+                    createToast(t('toast_set_success'), 'green')
+                    closeModal('#DataManagementModal')
+                } else {
+                    throw t('toast_set_failed')
+                }
+            } catch (e) {
+                createToast(e.message, 'red')
+            }
+        } catch (e) {
+            createToast(e.message, 'red')
+        }
+    };
+
     //官方后台貌似对PIN超出次数的判定有问题，PIN次数用完后提示输入PUK，此时换卡也不会变更状态，用户只能恢复出厂设置，所以此功能不会继续实现
     // let simCardPinDisabled = false
     // const initSimCardPin = async () => {
@@ -7823,6 +8141,12 @@ echo ${flag ? '1' : '0'} > /sys/devices/system/cpu/cpu3/online
     // initSimCardPin()
     //挂载方法到window
     const methods = {
+        handleUFIDataManagementFormSubmit,
+        switchDataMgrMethodTab,
+        handleVoLTE,
+        handleVoNR,
+        handleVoLTE1,
+        handleVoNR1,
         saveCustomRepo,
         resetCustomRepo,
         resetUsageModalData,

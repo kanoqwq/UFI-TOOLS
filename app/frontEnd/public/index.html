@@ -751,6 +751,14 @@
             <div class="mask" id="DataManagementModal" style="display: none">
                 <div class="modal">
                     <div class="title" data-i18n="data_manage_modal_title">流量管理</div>
+                    <!-- tab -->
+                    <div class="tabs" onclick="switchDataMgrMethodTab(event)"
+                        style="width: 100%;display: flex;margin-top: 10px;gap: 10px;">
+                        <button data-method="official" id="officialDataManagementTabBtn" style="flex: 1;"
+                            class="tab-btn active" data-i18n="official_data_management">官方流量管理</button>
+                        <button data-method="ufi" id="ufiDataManagementTabBtn" style="flex: 1;" class="tab-btn"
+                            data-i18n="ufi_data_management">UFI流量管理</button>
+                    </div>
                     <form onsubmit="handleDataManagementFormSubmit(event)" id="DataManagementForm">
                         <div class="title"
                             style="margin-top:10px;font-size:.7rem;flex-direction: column;align-items: start;gap: 0;">
@@ -802,8 +810,9 @@
                                     <input style="flex:1;height: 100%;width: 100%;" type="text"
                                         name="data_volume_limit_size" value="100" placeholder="流量套餐"
                                         data-i18n-placeholder="data_manage_plan_total_placeholder">
-                                    <select class="select" style="padding: 4px; margin-left: 6px;" value="1024"
-                                        name="data_volume_limit_type">
+                                    <select class="select"
+                                        style="padding: 4px; margin-left: 6px;margin: 0 !important;margin-left: 4px !important;"
+                                        value="1024" name="data_volume_limit_type">
                                         <option data-value="1" value="1">MB</option>
                                         <option data-value="1024" value="1024">GB</option>
                                         <option data-value="1048576" value="1048576">TB</option>
@@ -816,13 +825,81 @@
                                     <input style="flex:1;height: 100%;width: 100%;" type="text"
                                         name="data_volume_used_size" value="114" placeholder="已用流量"
                                         data-i18n-placeholder="data_manage_plan_used_placeholder">
-                                    <select class="select" style="padding: 4px; margin-left: 6px;" value="1024"
-                                        name="data_volume_used_type">
+                                    <select class="select"
+                                        style="padding: 4px; margin-left: 6px;margin: 0 !important;margin-left: 4px !important;"
+                                        value="1024" name="data_volume_used_type">
                                         <option data-value="1" value="1">MB</option>
                                         <option data-value="1024" value="1024">GB</option>
                                         <option data-value="1048576" value="1048576">TB</option>
                                     </select>
                                 </div>
+                            </div>
+                        </div>
+                        <div class="btn" style="text-align: right;">
+                            <button type="submit" data-i18n="submit_btn">提交</button>
+                            <button type="button" onclick="closeModal('#DataManagementModal')"
+                                data-i18n="close_btn">关闭</button>
+                        </div>
+                    </form>
+                    <form onsubmit="handleUFIDataManagementFormSubmit(event)" id="UFIDataManagementForm"
+                        style="display: none;">
+                        <div class="title"
+                            style="margin-top:10px;font-size:.7rem;flex-direction: column;align-items: start;gap: 0;">
+                            <!-- <span data-i18n="">提示：请正确设置提醒阈值</span> -->
+                            <!-- <span data-i18n="">当流量到达设置的阈值百分比时机器会红灯闪烁提示您流量不足</span> -->
+                            
+                        </div>
+                        <div class="content" id="UFI_DATA_MANAGE_LIST"
+                            style="overflow-y: scroll;padding: 15px;padding-top:0;width: 66vw;max-width: 400px;">
+                            <div class="item">
+                                <label style="display: flex;align-items: center;">
+                                    <span data-i18n="enable_ufi_data_management">启用UFI流量管理？</span>
+                                    <input type="checkbox" name="data_flow_limit_enabled">
+                                </label>
+                            </div>
+                            <div class="item" style="display: flex;gap: 10px;margin: 10px 0;">
+                                <span style="font-size: 14px;" data-i18n="count_method">统计方式：</span>
+                                <label style="display: flex;align-items: center;">
+                                    <span style="margin-right: 6px;" data-i18n="with_daily_flow">按日</span>
+                                    <input style="margin: 0;" type="radio" value="daily" name="data_flow_check_daily_or_monthly">
+
+                                </label>
+                                <label style="display: flex;align-items: center;">
+                                    <span style="margin-right: 6px;" data-i18n="with_monthly_flow">按月</span>
+                                    <input style="margin: 0;" type="radio" value="monthly" name="data_flow_check_daily_or_monthly">
+                                </label>
+                            </div>
+                            <div class="item" style="display: flex;gap: 10px;margin: 10px 0;">
+                                <span style="font-size: 14px;" data-i18n="data_ref">流量参考：</span>
+                                <label style="display: flex;align-items: center;">
+                                    <span style="margin-right: 6px;" data-i18n="official_back">官方后台</span>
+                                    <input style="margin: 0;" type="radio" value="official" name="data_check_reference">
+
+                                </label>
+                                <label style="display: flex;align-items: center;">
+                                    <span style="margin-right: 6px;" data-i18n="ufi_back">UFI后台</span>
+                                    <input style="margin: 0;" type="radio" value="ufi" name="data_check_reference">
+                                </label>
+                            </div>
+                            <div class="item">
+                                <div style="display: flex;align-items: center;">
+                                    <span data-i18n="disconnect_network_data_value">断网流量：</span>
+                                    <input style="flex:1;height: 100%;width: 100%;margin-left: 10px;" type="text"
+                                        name="data_flow_max_limit" value="0">
+                                    <select class="select"
+                                        style="padding: 4px; margin-left: 6px;margin: 0 !important;margin-left: 4px !important;"
+                                        value="1024" name="data_flow_max_limit_type">
+                                        <option data-value="1" value="1">MB</option>
+                                        <option data-value="1024" value="1024">GB</option>
+                                        <option data-value="1048576" value="1048576">TB</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="item">
+                                <label style="display: flex;align-items: center;">
+                                    <span data-i18n="data_limit_status_forward_notify">断网时通知(需开启短信转发)？</span>
+                                    <input type="checkbox" name="data_limit_status_forward_enabled">
+                                </label>
                             </div>
                         </div>
                         <div class="btn" style="text-align: right;">
@@ -1572,6 +1649,14 @@
                                     <button class="btn" style="margin-top: 6px;"
                                         onclick="disableButtonWhenExecuteFunc(event,()=>handleAT('AT+CIMI'))"
                                         data-i18n="at_imsi">IMSI</button>
+                                    <button class="btn" id="VoLTESwitchBtn" style="margin-top: 6px;"
+                                        onclick="disableButtonWhenExecuteFunc(event,()=>handleVoLTE())">VoLTE(slot0)</button>
+                                    <button class="btn" id="VoNRSwitchBtn" style="margin-top: 6px;"
+                                        onclick="disableButtonWhenExecuteFunc(event,()=>handleVoNR())">VoNR(slot0)</button>
+                                    <button class="btn" id="VoLTESwitchBtn1" style="margin-top: 6px;"
+                                        onclick="disableButtonWhenExecuteFunc(event,()=>handleVoLTE1())">VoLTE(slot1)</button>
+                                    <button class="btn" id="VoNRSwitchBtn1" style="margin-top: 6px;"
+                                        onclick="disableButtonWhenExecuteFunc(event,()=>handleVoNR1())">VoNR(slot1)</button>
                                     <button class="btn" style="margin-top: 6px;" id="highRailModeBtn"
                                         onclick="disableButtonWhenExecuteFunc(event,()=>handleHighRailMode(event))"
                                         data-i18n="at_high_rail_mode">高铁模式</button>

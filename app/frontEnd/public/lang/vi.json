@@ -837,5 +837,19 @@
     "plugin_post_request_toast_title": "Gửi plugin",
     "plugin_post_request": "[Gửi plugin UFI] Yêu cầu gửi plugin",
     "plugin_set_repo_save": "Tải",
-    "custom_plugin_repo": "Nguồn plugin tùy chỉnh"
+    "custom_plugin_repo": "Nguồn plugin tùy chỉnh",
+    "disconnect_network_data_value": "Ngắt tại:",
+    "ufi_back": "UFI",
+    "official_back": "Chính thức",
+    "with_monthly_flow": "Theo tháng",
+    "with_daily_flow": "Theo ngày",
+    "count_method": "Thống kê:",
+    "enable_ufi_data_management": "Bật quản lý UFI?",
+    "official_data_management": "QL lưu lượng gốc",
+    "ufi_data_management": "QL lưu lượng UFI",
+    "data_flow_limit_reached": "Đã vượt giới hạn, đã ngắt mạng!",
+    "data_flow_max_limit_must_be_number": "Giới hạn phải là số!",
+    "data_flow_max_limit_must_greater_than_0": "Giới hạn phải lớn hơn 0!",
+    "data_ref": "Nguồn DL",
+    "data_limit_status_forward_notify": "Thông báo khi ngắt mạng? (Cần chuyển tiếp SMS)"
 }

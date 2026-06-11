@@ -837,5 +837,19 @@
     "plugin_post_request_toast_title": "Submit Plugin",
     "plugin_post_request": "[UFI Plugin Submission] Plugin Submission Request",
     "plugin_set_repo_save": "Load",
-    "custom_plugin_repo": "Custom plugin source"
+    "custom_plugin_repo": "Custom plugin source",
+    "disconnect_network_data_value": "Cutoff Data:",
+    "ufi_back": "UFI",
+    "official_back": "Official",
+    "with_monthly_flow": "Monthly",
+    "with_daily_flow": "Daily",
+    "count_method": "Mode:",
+    "enable_ufi_data_management": "Enable UFI Data?",
+    "official_data_management": "Official Data",
+    "ufi_data_management": "UFI Data",
+    "data_flow_limit_reached": "Data limit reached, network disabled!",
+    "data_flow_max_limit_must_be_number": "Data limit must be a number!",
+    "data_flow_max_limit_must_greater_than_0": "Data limit must be > 0!",
+    "data_ref": "Data Ref",
+    "data_limit_status_forward_notify": "Notify on disconnect? (SMS forwarding required)"
 }

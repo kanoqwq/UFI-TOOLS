@@ -838,5 +838,19 @@
     "plugin_post_request_toast_title": "投稿插件",
     "plugin_post_request": "[UFI插件投稿] 请求投稿插件",
     "plugin_set_repo_save":"加载",
-    "custom_plugin_repo":"自定义插件源地址"
+    "custom_plugin_repo":"自定义插件源地址",
+    "disconnect_network_data_value":"断网流量：",
+    "ufi_back":"UFI后台",
+    "official_back":"官方后台",
+    "with_monthly_flow":"按月",
+    "with_daily_flow":"按日",
+    "count_method":"统计方式：",
+    "enable_ufi_data_management":"启用UFI流量管理？",
+    "official_data_management":"官方流量管理",
+    "ufi_data_management":"UFI流量管理",
+    "data_flow_limit_reached":"流量超限，已自动关闭数据连接！",
+    "data_flow_max_limit_must_be_number":"流量限制必须为数字！",
+    "data_flow_max_limit_must_greater_than_0":"流量限制必须大于0！",
+    "data_ref":"流量参考",
+    "data_limit_status_forward_notify":"断网时通知(需开启短信转发)？"
 }
