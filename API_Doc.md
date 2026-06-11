@@ -355,6 +355,51 @@ Content-Type: application/json
 - **异常处理**：捕获所有异常，返回 500 错误及异常信息。
 
 
+## CLI请求工具
+UFI-TOOLS 内置了一个 CLI 请求工具，可以直接在命令行重使用。
+ `/data/data/com.minikano.f50_sms/files/ufi_req` 可以请求 `/api/` 开头的接口，使用方法如下：
+```shell
+:/ # /data/data/com.minikano.f50_sms/files/ufi_req
+ufi_req - MiniKano签名请求工具
+
+用法：
+  ufi_req -host 192.168.1.1 -pass 123456 -X POST -e /api/xxx -d '{"command":"ls"}'
+  ufi_req -host 192.168.1.1 -pass 123456 -X GET  -e "/api/AT?command=AT&slot=0"
+
+参数：
+  -X string
+        HTTP 方法：GET/POST/PUT/DELETE... (default "GET")
+  -d string
+        请求体(JSON字符串)。GET 一般不需要。例：'{"command":"ls"}'
+  -e string
+        请求路径或完整URL，如 "/api/xxx" (必填)
+  -host string
+        目标地址，比如 "192.168.0.1" 或 "192.168.0.1:2333" (选填) (default "192.168.0.1:2333")
+  -pass string
+        密码明文，用于生成 Authorization=sha256(password) (必填)
+  -t int
+        超时秒数 (默认 15) (default 10)
+```
+
+ `/data/data/com.minikano.f50_sms/files/zreq` 可以请求ZTE自带的后台接口，使用方法如下：
+```shell
+:/ # /data/data/com.minikano.f50_sms/files/zreq   
+参数 --pwd 不能为空
+Usage of /data/data/com.minikano.f50_sms/files/zreq:
+  -body string
+        POST 请求体，格式：goformId=LOGIN&isTest=false
+  -ip string
+        设备 IP 地址（可选），示例：192.168.0.1 (default "192.168.0.1")
+  -json
+        是否以 JSON 格式输出响应
+  -method string
+        请求方法：GET 或 POST（默认 GET） (default "GET")
+  -params string
+        GET 请求参数，格式：cmd=LD&multi_data=1
+  -pwd string
+        登录密码（必填）
+```
+
 # UFI-TOOLS 插件源 JSON 规范
 
 插件源地址必须返回 JSON。
