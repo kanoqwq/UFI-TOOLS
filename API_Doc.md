@@ -356,7 +356,8 @@ Content-Type: application/json
 
 
 ## CLI请求工具
-UFI-TOOLS 内置了一个 CLI 请求工具，可以直接在命令行重使用。
+UFI-TOOLS 内置了一个 CLI 请求工具，可以直接在命令行内使用。
+
  `/data/data/com.minikano.f50_sms/files/ufi_req` 可以请求 `/api/` 开头的接口，使用方法如下：
 ```shell
 :/ # /data/data/com.minikano.f50_sms/files/ufi_req
