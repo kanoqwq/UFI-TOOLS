@@ -6,10 +6,12 @@ import com.minikano.f50_sms.utils.KanoLog
 import com.minikano.f50_sms.utils.SmsInfo
 import com.minikano.f50_sms.utils.SmsPoll
 import com.minikano.f50_sms.modules.BASE_TAG
+import com.minikano.f50_sms.utils.SmsPoll.forwardByEmail
+import com.minikano.f50_sms.utils.SmsPoll.forwardSmsByCurl
+import com.minikano.f50_sms.utils.SmsPoll.forwardSmsByDingTalk
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.call
-import io.ktor.server.request.receive
 import io.ktor.server.request.receiveText
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.Route
@@ -422,6 +424,55 @@ fun Route.smsModule(context: Context) {
 
         call.response.headers.append("Access-Control-Allow-Origin", "*")
         call.respondText(json, ContentType.Application.Json, HttpStatusCode.OK)
+    }
+
+    //使用短信转发渠道发送自定义消息
+    post("/api/do_forward_msg") {
+        try {
+            val body = call.receiveText()
+            val json = JSONObject(body)
+
+            val address = json.optString("address", "").trim()
+            val smsBody = json.optString("body", "").trim()
+            val isSms = json.optBoolean("is_sms", true)
+            var timestamp = json.optLong("timestamp", -1)
+
+            if (timestamp < 0 ) {
+                timestamp = System.currentTimeMillis()
+            }
+
+            val sharedPrefs = context.getSharedPreferences("kano_ZTE_store", Context.MODE_PRIVATE)
+            val forwardMethod = sharedPrefs.getString("kano_sms_forward_method", "") ?: ""
+            val sms = SmsInfo(address,smsBody,timestamp)
+            when (forwardMethod) {
+                "SMTP" -> {
+                    forwardByEmail(sms, context,isSms)
+                }
+                "CURL" -> {
+                    forwardSmsByCurl(sms, context)
+                }
+                "DINGTALK" -> {
+                    forwardSmsByDingTalk(sms, context,isSms)
+                }
+            }
+
+            KanoLog.d(TAG, "主动触发短信转发API：$sms,渠道：$forwardMethod")
+
+            call.response.headers.append("Access-Control-Allow-Origin", "*")
+            call.respondText(
+                """{"result":"success"}""",
+                ContentType.Application.Json,
+                HttpStatusCode.OK
+            )
+        } catch (e: Exception) {
+            KanoLog.d(TAG, "主动触发短信转发出错：${e.message}")
+            call.response.headers.append("Access-Control-Allow-Origin", "*")
+            call.respondText(
+                """{"error":"主动触发短信转发出错：${e.message}"}""",
+                ContentType.Application.Json,
+                HttpStatusCode.InternalServerError
+            )
+        }
     }
 
 }

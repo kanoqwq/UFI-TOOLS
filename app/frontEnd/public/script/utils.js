@@ -924,7 +924,7 @@ const fillCurl = (kind) => {
     switch (kind) {
         case 'tg':
             message = message = t('tg_sms_help')
-            curl_text.value = `curl -s -X POST https://api.telegram.org/bot<你的token>/sendMessage -H "Content-Type: application/json" -d '{"chat_id":<你的聊天会话id>,"text":"{{sms-body}} {{sms-time}} {{sms-from}}","parse_mode":"HTML"}'`
+            curl_text.value = `curl -s -X POST https://api.telegram.org/bot<你的token>/sendMessage -H "Content-Type: application/json" -d '{"chat_id":<你的聊天会话id>,"text":"{{sms-body}} {{sms-time}} {{sms-from}}","parse_mode":"markdown"}'`
             break;
         case 'wechat':
             message = t('wechat_sms_help')
