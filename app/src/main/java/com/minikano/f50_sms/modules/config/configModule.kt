@@ -304,5 +304,4 @@ fun Route.configModule(context: Context) {
             )
         }
     }
-
 }

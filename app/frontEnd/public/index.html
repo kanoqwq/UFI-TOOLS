@@ -847,7 +847,7 @@
                             style="margin-top:10px;font-size:.7rem;flex-direction: column;align-items: start;gap: 0;">
                             <!-- <span data-i18n="">提示：请正确设置提醒阈值</span> -->
                             <!-- <span data-i18n="">当流量到达设置的阈值百分比时机器会红灯闪烁提示您流量不足</span> -->
-                            
+
                         </div>
                         <div class="content" id="UFI_DATA_MANAGE_LIST"
                             style="overflow-y: scroll;padding: 15px;padding-top:0;width: 66vw;max-width: 400px;">
@@ -861,12 +861,14 @@
                                 <span style="font-size: 14px;" data-i18n="count_method">统计方式：</span>
                                 <label style="display: flex;align-items: center;">
                                     <span style="margin-right: 6px;" data-i18n="with_daily_flow">按日</span>
-                                    <input style="margin: 0;" type="radio" value="daily" name="data_flow_check_daily_or_monthly">
+                                    <input style="margin: 0;" type="radio" value="daily"
+                                        name="data_flow_check_daily_or_monthly">
 
                                 </label>
                                 <label style="display: flex;align-items: center;">
                                     <span style="margin-right: 6px;" data-i18n="with_monthly_flow">按月</span>
-                                    <input style="margin: 0;" type="radio" value="monthly" name="data_flow_check_daily_or_monthly">
+                                    <input style="margin: 0;" type="radio" value="monthly"
+                                        name="data_flow_check_daily_or_monthly">
                                 </label>
                             </div>
                             <div class="item" style="display: flex;gap: 10px;margin: 10px 0;">
@@ -1749,9 +1751,14 @@
                 </div>
             </div>
             <!-- 更改密码模态框 -->
-            <div class="mask" id="changePassModal" style="display: none">
-                <div class="modal">
+            <div class="mask" id="changePassModal" style="display: none;">
+                <div class="modal" style="max-width: 500px;">
                     <div class="title" data-i18n="change_password_title">更改密码(某兴WEB密码)</div>
+                    <div class="title" style="display: block;font-size: .7rem;margin-top: 10px;line-height: 20px;">
+                        <span
+                            data-i18n="change_pass_tip1">请务必使用UFI-TOOLS后台网页更改官方后台的密码，请不要直接在官方后台内更改密码，否则会导致后台记录密码与官方后台密码不一致，造成UFI-TOOLS部分功能（如定时任务）失效！</span><br />
+                        <span data-i18n="change_pass_tip2">当前UFI-TOOLS保存的密码为：</span>&nbsp;<span id="official_web_pwd"></span>
+                    </div>
                     <form onsubmit="handleChangePassword(event)" id="changePassForm">
                         <input type="text" autocomplete="username" name="username" value="admin" style="display: none;">
                         <div class="content" style="overflow-y: scroll; padding: 15px; width: 66vw; max-width: 400px;">

@@ -851,5 +851,7 @@
     "data_flow_max_limit_must_be_number": "Giới hạn phải là số!",
     "data_flow_max_limit_must_greater_than_0": "Giới hạn phải lớn hơn 0!",
     "data_ref": "Nguồn DL",
-    "data_limit_status_forward_notify": "Thông báo khi ngắt mạng? (Cần chuyển tiếp SMS)"
+    "data_limit_status_forward_notify": "Thông báo khi ngắt mạng? (Cần chuyển tiếp SMS)",
+    "change_pass_tip1": "Vui lòng đổi mật khẩu trang quản trị chính thức thông qua giao diện quản lý UFI-TOOLS. Không thay đổi trực tiếp trong trang quản trị chính thức. Nếu không, mật khẩu được UFI-TOOLS lưu có thể không khớp với mật khẩu thực tế, khiến các chức năng như tác vụ định kỳ không hoạt động bình thường!",
+    "change_pass_tip2": "Mật khẩu hiện đang được UFI-TOOLS lưu là:"
 }

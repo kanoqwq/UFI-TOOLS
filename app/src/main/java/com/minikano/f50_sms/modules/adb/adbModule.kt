@@ -55,6 +55,27 @@ fun Route.adbModule(context: Context) {
         }
     }
 
+    //获取当前高级后台存储的官方后台密码
+    get("/api/get_official_web_password") {
+        try {
+            val sharedPrefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            // 拼装 JSON 响应
+            val resultJson = JSONObject()
+                .put("pwd",sharedPrefs.getString("ADMIN_PWD",""))
+
+            call.response.headers.append("Access-Control-Allow-Origin", "*")
+            call.respondText(resultJson.toString(), ContentType.Application.Json, HttpStatusCode.OK)
+        } catch (e: Exception) {
+            KanoLog.d(TAG, "请求出错：${e.message}")
+            call.response.headers.append("Access-Control-Allow-Origin", "*")
+            call.respondText(
+                """{"error":"请求出错"}""",
+                ContentType.Application.Json,
+                HttpStatusCode.InternalServerError
+            )
+        }
+    }
+
     //获取网络ADB自启状态
     get("/api/adb_wifi_setting") {
         try {

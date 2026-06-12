@@ -3486,6 +3486,18 @@ function main_func() {
         }
     }
 
+    const loadOfficialWebPwdContent = async () => {
+        const official_web_pwd = document.querySelector("#official_web_pwd")
+        if (!official_web_pwd) return
+        try {
+            const { pwd } = await (await fetchWithTimeout(`${KANO_baseURL}/get_official_web_password`)).json()
+            if (pwd != null && pwd != undefined) {
+                official_web_pwd.textContent = pwd
+            }
+        } catch (e) {
+            console.error("loadOfficialWebPwdContent 请求失败：", e)
+        }
+    }
     //更改密码
     initChangePassData = async () => {
         const el = document.querySelector("#CHANGEPWD")
@@ -3496,6 +3508,7 @@ function main_func() {
         }
         el.style.backgroundColor = ''
         el.onclick = async () => {
+            loadOfficialWebPwdContent()
             showModal('#changePassModal')
         }
     }

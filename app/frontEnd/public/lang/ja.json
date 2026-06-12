@@ -851,5 +851,7 @@
     "data_flow_max_limit_must_be_number": "通信量は数値で入力してください！",
     "data_flow_max_limit_must_greater_than_0": "通信量は0より大きくしてください！",
     "data_ref": "通信量参照",
-    "data_limit_status_forward_notify": "通信停止時に通知する？（SMS転送必須）"
+    "data_limit_status_forward_notify": "通信停止時に通知する？（SMS転送必須）",
+    "change_pass_tip1": "公式管理画面のパスワードは必ずUFI-TOOLS管理画面から変更してください。公式管理画面で直接変更しないでください。変更すると、UFI-TOOLSに保存されたパスワードと実際のパスワードが一致しなくなり、定時タスクなどの機能が正常に利用できなくなる場合があります！",
+    "change_pass_tip2": "現在UFI-TOOLSに保存されているパスワード："
 }

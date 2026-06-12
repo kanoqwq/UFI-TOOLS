@@ -851,5 +851,7 @@
     "data_flow_max_limit_must_be_number": "Data limit must be a number!",
     "data_flow_max_limit_must_greater_than_0": "Data limit must be > 0!",
     "data_ref": "Data Ref",
-    "data_limit_status_forward_notify": "Notify on disconnect? (SMS forwarding required)"
+    "data_limit_status_forward_notify": "Notify on disconnect? (SMS forwarding required)",
+    "change_pass_tip1": "Please change the official web panel password through the UFI-TOOLS management page. Do not modify it directly in the official panel. Otherwise, the password saved by UFI-TOOLS may become inconsistent with the actual password, causing scheduled tasks and other functions to stop working properly!",
+    "change_pass_tip2": "The password currently saved by UFI-TOOLS is:"
 }
