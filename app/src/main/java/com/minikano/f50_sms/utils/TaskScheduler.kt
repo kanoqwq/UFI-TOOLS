@@ -14,6 +14,8 @@ import com.minikano.f50_sms.utils.KanoUtils.Companion.buildStatusSmsMsg
 import com.minikano.f50_sms.utils.SmsPoll.forwardByEmail
 import com.minikano.f50_sms.utils.SmsPoll.forwardSmsByCurl
 import com.minikano.f50_sms.utils.SmsPoll.forwardSmsByDingTalk
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 // 定时任务管理器
 object TaskSchedulerManager {
@@ -67,6 +69,8 @@ class TaskScheduler(
     private val json = Json { ignoreUnknownKeys = true }
     private var lastScheduleDate: String? = null
     private var pollJob: Job? = null
+
+    private val goformMutex = Mutex()
 
     private fun resetDailyTaskFlags() {
         var shouldPersist = false
@@ -276,24 +280,27 @@ class TaskScheduler(
                     } else {
                         scope.launch {
                             if (!scope.isActive) return@launch //避免任务在已停止调度器中执行
-                            try {
-                                val req = KanoGoformRequest("http://$ADB_IP:8080")
-                                val cookie = req.login(ADMIN_PWD)
-                                if (cookie != null) {
-                                    val result = req.postData(cookie, saved.actionMap)
-                                    req.logout(cookie)
-                                    if (result?.getString("result") == "success") {
-                                        KanoLog.d(
-                                            "UFI_TOOLS_LOG_TaskScheduler",
-                                            "zte_web_API执行成功"
-                                        )
+                            goformMutex.withLock {
+                                try {
+                                    val req = KanoGoformRequest("http://$ADB_IP:8080")
+                                    val cookie = req.login(ADMIN_PWD)
+                                    if (cookie != null) {
+                                        val result = req.postData(cookie, saved.actionMap)
+                                        req.logout(cookie)
+                                        if (result?.getString("result") == "success") {
+                                            KanoLog.d(
+                                                "UFI_TOOLS_LOG_TaskScheduler",
+                                                "zte_web_API执行成功"
+                                            )
+                                        }
                                     }
+                                } catch (e: Exception) {
+                                    KanoLog.e(
+                                        "UFI_TOOLS_LOG_TaskScheduler",
+                                        "任务 ${saved.id} 执行失败: ${e.message}"
+                                    )
                                 }
-                            } catch (e: Exception) {
-                                KanoLog.e(
-                                    "UFI_TOOLS_LOG_TaskScheduler",
-                                    "任务 ${saved.id} 执行失败: ${e.message}"
-                                )
+                                delay(1000)
                             }
                         }
                     }
