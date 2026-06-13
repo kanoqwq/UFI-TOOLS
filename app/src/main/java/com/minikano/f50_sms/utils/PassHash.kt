@@ -11,10 +11,9 @@ object PassHash {
     /** 生成随机盐 */
     fun generateSalt(bytes: Int = 16): ByteArray {
         require(bytes >= 16) { "salt bytes should be >= 16" }
-        val fixedHex = "yPRdRTAqha8aceR8eMxcuP78uCFa"
-        val fixed = fixedHex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
-        return fixed
-        //return ByteArray(bytes).also { rng.nextBytes(it) }
+        val salt = ByteArray(bytes)
+        rng.nextBytes(salt)
+        return salt
     }
 
     /**
