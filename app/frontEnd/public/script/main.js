@@ -6762,49 +6762,61 @@ echo ${flag ? '1' : '0'} > /sys/devices/system/cpu/cpu3/online
                 return `${bin} -A INPUT -p tcp --dport ${port} -j DROP`;
             };
 
-            const delCmd = (useV6) => addCmd(useV6).replace('-A', '-D');
+            const delCmd = (useV6) => {
+                const bin = useV6 ? 'ip6tables' : 'iptables';
+                return `${bin} -D INPUT -p tcp --dport ${port} -j DROP`;
+            };
 
             // 删除当前系统中的 DROP 规则
             const cleanupCmd = (useV6) => {
                 const bin = useV6 ? 'ip6tables' : 'iptables';
-                return `for table in filter nat mangle raw security; do ${bin}-save -t $table | grep -- '--dport ${port} .*DROP' | sed 's/-A/-D/' | while read line; do ${bin} $line; done; done`;
+                return `for table in filter nat mangle raw security; do ${bin}-save -t $table 2>/dev/null | grep -- '--dport ${port} .*DROP' | sed 's/-A/-D/' | while read line; do ${bin} $line 2>/dev/null; done; done`;
             };
 
+            const saveBootup = async (cmd, proto) => {
+                const line = `(${cmd} >/dev/null 2>&1 &) # UFI-TOOLS ${proto} ${port}`;
+                const shell = `grep -qxF '${line}' /sdcard/ufi_tools_boot.sh 2>/dev/null || echo '${line}' >> /sdcard/ufi_tools_boot.sh`;
+                await runShellWithRoot(shell);
+            };
+
+            const removeAllBootup = async () => {
+                await runShellWithRoot(`sed -i '/# UFI-TOOLS .* ${port}/d' /sdcard/ufi_tools_boot.sh 2>/dev/null`);
+            };
+
+            // 先清理当前系统旧规则，避免重复
             let r0 = await runShellWithRoot(cleanupCmd(false));
             if (!r0.success) return false;
+
             if (v6) {
                 let r0v6 = await runShellWithRoot(cleanupCmd(true));
                 if (!r0v6.success) return false;
             }
 
-            const saveBootup = async (cmd, proto) => {
-                const line = `${cmd} # UFI-TOOLS ${proto} ${port}`;
-                const shell = `grep -qxF '${line}' /sdcard/ufi_tools_boot.sh || echo '${line}' >> /sdcard/ufi_tools_boot.sh`;
-                await runShellWithRoot(shell);
-            };
+            // 当前系统立即生效
+            if (flag) {
+                // flag=true：放行端口
+                // 前面 cleanup 已经删除 DROP，这里不需要再 -D
+            } else {
+                // flag=false：阻止端口
+                let r1 = await runShellWithRoot(addCmd(false));
+                if (!r1.success) return false;
 
-            const removeBootup = async (proto) => {
-                const pattern = `# UFI-TOOLS ${proto} ${port}`;
-                await runShellWithRoot(`sed -i '/${pattern}/d' /sdcard/ufi_tools_boot.sh`);
-            };
-
-            const removeAllBootup = async () => {
-                await runShellWithRoot(`sed -i '/# UFI-TOOLS .* ${port}/d' /sdcard/ufi_tools_boot.sh`);
-            };
-
-            if (!isBootup) {
-                await removeAllBootup();
+                if (v6) {
+                    let r1v6 = await runShellWithRoot(addCmd(true));
+                    if (!r1v6.success) return false;
+                }
             }
 
-            if (flag) {
-                await runShellWithRoot(delCmd(false));
-                if (v6) await runShellWithRoot(delCmd(true));
-                await removeBootup('v4');
-                if (v6) await removeBootup('v6');
-            } else {
-                await runShellWithRoot(addCmd(false));
-                if (v6) await runShellWithRoot(addCmd(true));
-                if (isBootup) {
+            // 开机脚本持久化
+            await removeAllBootup();
+
+            if (isBootup) {
+                if (flag) {
+                    // 开机后放行：删除 DROP
+                    await saveBootup(delCmd(false), 'v4');
+                    if (v6) await saveBootup(delCmd(true), 'v6');
+                } else {
+                    // 开机后阻止：添加 DROP
                     await saveBootup(addCmd(false), 'v4');
                     if (v6) await saveBootup(addCmd(true), 'v6');
                 }
