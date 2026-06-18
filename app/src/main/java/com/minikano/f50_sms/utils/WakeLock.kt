@@ -9,6 +9,7 @@ class WakeLock {
         private var wakeLock: PowerManager.WakeLock? = null
         private var wakeLock2: PowerManager.WakeLock? = null
         private var wakeLock3: PowerManager.WakeLock? = null
+        private var wakeLockBase: PowerManager.WakeLock? = null
 
         fun execWakeLock (pm: PowerManager){
             //防止重复持有唤醒锁
@@ -33,6 +34,24 @@ class WakeLock {
             )
             wakeLock3?.acquire()
             Log.d("UFI_TOOLS_LOG", "已开启屏幕亮度唤醒锁，保持屏幕常亮并唤醒!")
+        }
+
+        fun exeBaseWakeLock (pm: PowerManager){
+            //防止重复持有唤醒锁
+            releaseBaseWakeLock()
+            wakeLockBase = pm.newWakeLock(
+                PowerManager.PARTIAL_WAKE_LOCK,
+                "UFI_TOOLS:WebServer"
+                )
+            wakeLockBase?.setReferenceCounted(false)
+            wakeLockBase?.acquire()
+        }
+
+        fun releaseBaseWakeLock() {
+            wakeLockBase?.let {
+                if (it.isHeld) it.release()
+                Log.d("UFI_TOOLS_LOG", "已释放Base唤醒锁")
+            }
         }
 
         fun releaseWakeLock() {

@@ -10,6 +10,8 @@ import android.content.IntentFilter
 import android.os.Build
 import android.os.Handler
 import android.os.HandlerThread
+import android.os.PowerManager
+import com.minikano.f50_sms.utils.WakeLock
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
@@ -67,6 +69,9 @@ class ADBService : Service() {
             }
             handler = Handler(handlerThread.looper)
         }
+
+        //基本唤醒锁
+        WakeLock.exeBaseWakeLock(getSystemService(Context.POWER_SERVICE) as PowerManager)
 
         handler.removeCallbacks(runnableSMSAndDataFlowCheck)
         handler.removeCallbacks(runnableSMB)

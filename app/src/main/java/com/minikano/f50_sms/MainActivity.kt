@@ -187,8 +187,8 @@ class MainActivity : ComponentActivity() {
                 delay(4600)
                 exitProcess(-114514)
             } else {
-                // 保持屏幕常亮
-                window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                //基本唤醒锁
+                WakeLock.exeBaseWakeLock(getSystemService(Context.POWER_SERVICE) as PowerManager)
 
                 requestNotificationPermissionIfNeeded()
 
