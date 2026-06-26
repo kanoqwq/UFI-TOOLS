@@ -25,10 +25,12 @@ object RootShell {
             val outputStream = BufferedWriter(OutputStreamWriter(socket.outputStream))
             val inputStream = BufferedReader(InputStreamReader(socket.inputStream))
 
+            val endTag = "__KANO_SOCKET_COMMAND_END_${java.util.UUID.randomUUID()}__"
+
             // 发送命令
             outputStream.write(command)
             outputStream.write("\n")
-            outputStream.write("echo __END__\n") // 标记结尾
+            outputStream.write("printf '%s\\n' '$endTag'\n")  // 标记结尾
             outputStream.flush()
             KanoLog.d("UFI_TOOLS_LOG", "Socket write")
 
@@ -36,12 +38,23 @@ object RootShell {
             val result = StringBuilder()
             while (true) {
                 val line = inputStream.readLine() ?: break
-                if (line.trim() == "__END__") break
+
+                val endIndex = line.indexOf(endTag)
+
+                if (endIndex >= 0) {
+                    //fix: issue #106 RootShell socket 执行命令时，若输出不以换行结尾会导致超时
+                    val beforeEnd = line.substring(0, endIndex)
+                    if (beforeEnd.isNotEmpty()) {
+                        result.append(beforeEnd)
+                    }
+                    break
+                }
+
                 KanoLog.d("UFI_TOOLS_LOG", "Socket : ${line.trim()}")
                 result.appendLine(line)
             }
 
-            return result.toString()
+            return result.toString().trimEnd()
 
         } catch (e: IOException) {
             e.printStackTrace()
