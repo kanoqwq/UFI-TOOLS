@@ -922,7 +922,11 @@ function main_func() {
                             return
                         }
                         //立即重新执行函数
-                        await handlerStatusRender()
+                        handlerStatusRender()
+                        if (typeof StopStatusRenderTimer == 'function') {
+                            StopStatusRenderTimer()
+                            StopStatusRenderTimer = requestInterval(() => handlerStatusRender(), REFRESH_TIME)
+                        }
                         return //跳过本次渲染
                     }
                 } catch (e) {
