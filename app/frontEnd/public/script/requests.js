@@ -81,6 +81,7 @@ const requestIsLogin = async () => {
     const res = await fetch(KANO_baseURL + "/goform/goform_get_cmd_process?isTest=false&cmd=loginfo&_=" + Date.now(), {
         method: "GET",
         headers: {
+            "kano-cookie": KANO_COOKIE,
             ...common_headers,
         }
     })
