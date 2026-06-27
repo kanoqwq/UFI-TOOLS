@@ -77,6 +77,16 @@ const common_headers = {
     "authorization": KANO_TOKEN
 }
 
+const requestIsLogin = async () => {
+    const res = await fetch(KANO_baseURL + "/goform/goform_get_cmd_process?isTest=false&cmd=loginfo&_=" + Date.now(), {
+        method: "GET",
+        headers: {
+            ...common_headers,
+        }
+    })
+    return await res.json()
+}
+
 const login1 = async () => {
     try {
         const { LD } = await getLD()
@@ -146,11 +156,23 @@ let login2 = async () => {
 }
 
 let login = async () => {
+    if (KANO_COOKIE) {
+        try {
+            const { loginfo } = await requestIsLogin()
+            if (loginfo && (loginfo == 'ok')) {
+                console.log("Cookie有效，不需要再次登录")
+                return KANO_COOKIE
+            }
+        } catch (e) {
+            console.error("requestIsLogin请求失败：", e)
+        }
+    }
     if (loginMethod == '1') {
         return await login2()
     }
     return await login1()
 }
+
 
 const logout = async (cookie) => {
     const AD = await processAD(cookie)

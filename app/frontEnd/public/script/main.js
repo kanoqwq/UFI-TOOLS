@@ -921,9 +921,13 @@ function main_func() {
                             status_login_try_times = 0
                             return
                         }
+                        //立即重新执行函数
+                        await handlerStatusRender()
                         return //跳过本次渲染
                     }
-                } catch (e) { }
+                } catch (e) {
+                    console.error("handlerStatusRender retry error:", e)
+                }
             }
 
             //如果打开了高级功能，且用户已经处于改串后不显串状态，则使用强力查串补充串号显示
@@ -942,7 +946,6 @@ function main_func() {
             Object.keys(res).forEach(key => {
                 window.UFI_DATA[key] = res[key];
             });
-
             adbQuery()
             isNotLoginOnce = false
             let html = ''
