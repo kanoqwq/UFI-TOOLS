@@ -49,6 +49,8 @@ object AppMeta {
     var dataFlowCheckRef = "default"
         private set
     var dataFlowMaxValue = -1L
+
+    var webServerCookie = ""
         private set
 
     var isReachedDataFlowLimit = false
@@ -64,6 +66,12 @@ object AppMeta {
     private val PREF_DATA_FLOW_MAX_LIMIT = "kano_data_flow_max_limit"
     private val PREF_DATA_FLOW_CHECK_DAILY_OR_MONTHLY = "kano_data_flow_check_daily_or_monthly"
     private val PREF_DATA_CHECK_REFERENCE = "kano_data_check_reference"
+
+    fun setWebServerCookie(ck: String): Boolean {
+        if(ck.isBlank()) return false
+        webServerCookie = ck.trim()
+        return  true
+    }
 
     fun setDataFlowCheckDailyOrMonthly(context: Context,value: String = "monthly"){
         val sharedPrefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)

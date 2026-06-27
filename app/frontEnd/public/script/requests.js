@@ -88,6 +88,46 @@ const requestIsLogin = async () => {
     return await res.json()
 }
 
+const getCookieFromUFI = async () => {
+    try {
+        const res = await fetch(KANO_baseURL + "/get_cookie", {
+            method: "GET",
+            headers: {
+                ...common_headers,
+            }
+        })
+        return await res.json()
+    } catch {
+        return null
+    }
+}
+
+const setCookieToUFI = async (ck) => {
+    try {
+        const res = await fetch(KANO_baseURL + "/set_cookie", {
+            method: "POST",
+            headers: {
+                ...common_headers,
+            },
+            body: JSON.stringify({ cookie: ck })
+        })
+        return await res.json()
+    } catch {
+        return null
+    }
+}
+
+const setKanoCookie = async (ck) => {
+    if (!ck) return
+    KANO_COOKIE = ck
+    try {
+        const res = await setCookieToUFI(ck)
+        return res.result
+    } catch {
+        return false
+    }
+}
+
 const login1 = async () => {
     try {
         const { LD } = await getLD()
@@ -113,7 +153,8 @@ const login1 = async () => {
             return null
         }
         const ck = res.headers.get('kano-cookie').split(';')[0]
-        KANO_COOKIE = ck
+        // KANO_COOKIE = ck
+        await setKanoCookie(ck)
         return ck
     }
     catch {
@@ -148,7 +189,8 @@ let login2 = async () => {
         }
         //设置全局cookie
         const ck = res.headers.get('kano-cookie').split(';')[0]
-        KANO_COOKIE = ck
+        // KANO_COOKIE = ck
+        await setKanoCookie(ck)
         return ck
     }
     catch {
@@ -157,20 +199,41 @@ let login2 = async () => {
 }
 
 let login = async () => {
-    if (KANO_COOKIE) {
+    try {
+        // 从服务端获取保存的 Cookie
+        const data = await getCookieFromUFI()
+        const cookie = data && data.cookie
+
+        if (cookie && cookie !== "") {
+            KANO_COOKIE = cookie
+        }
+    } catch (e) {
+        console.error("从设备获取保存的ck失败：", e)
+    }
+
+    if (KANO_COOKIE && KANO_COOKIE !== "") {
         try {
-            const { loginfo } = await requestIsLogin()
-            if (loginfo && (loginfo == 'ok')) {
+            const data = await requestIsLogin()
+            const loginfo = data && data.loginfo
+
+            if (loginfo === 'ok') {
                 console.log("Cookie有效，不需要再次登录")
                 return KANO_COOKIE
             }
+
+            // Cookie 无效，需要清空服务端持久化 Cookie
+            KANO_COOKIE = ""
+            await setKanoCookie("")
+
         } catch (e) {
             console.error("requestIsLogin请求失败：", e)
         }
     }
+
     if (loginMethod == '1') {
         return await login2()
     }
+
     return await login1()
 }
 

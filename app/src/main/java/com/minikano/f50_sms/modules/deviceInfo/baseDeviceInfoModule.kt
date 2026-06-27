@@ -558,4 +558,47 @@ fun Route.baseDeviceInfoModule(context: Context) {
             )
         }
     }
+
+    //保存官方后台cookie
+    post("/api/set_cookie"){
+        try {
+            val body = call.receiveText()
+            val json = JSONObject(body)
+            val ck = json.optString("cookie", "").trim()
+            if(ck.isEmpty()){
+                throw Exception("ck为空")
+            }
+
+            val result =  AppMeta.setWebServerCookie(ck)
+            val jsonResult = """{"result":$result}""".trimIndent()
+
+            call.response.headers.append("Access-Control-Allow-Origin", "*")
+            call.respondText(jsonResult, ContentType.Application.Json)
+        } catch (e: Exception) {
+            KanoLog.d("UFI_TOOLS_LOG", "set_cookie出错：${e.message}")
+            call.response.headers.append("Access-Control-Allow-Origin", "*")
+            call.respondText(
+                """{"error":"set_cookie出错"}""",
+                ContentType.Application.Json,
+                HttpStatusCode.InternalServerError
+            )
+        }
+    }
+
+    //读取官方后台cookie
+    get("/api/get_cookie") {
+        try {
+            val jsonResult = JSONObject().put("cookie", AppMeta.webServerCookie)
+            call.response.headers.append("Access-Control-Allow-Origin", "*")
+            call.respondText(jsonResult.toString(), ContentType.Application.Json)
+        } catch (e: Exception) {
+            KanoLog.d("UFI_TOOLS_LOG", "get_cookie出错：${e.message}")
+            call.response.headers.append("Access-Control-Allow-Origin", "*")
+            call.respondText(
+                """{"error":"get_cookie出错"}""",
+                ContentType.Application.Json,
+                HttpStatusCode.InternalServerError
+            )
+        }
+    }
 }
