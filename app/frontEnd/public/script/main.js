@@ -704,6 +704,10 @@ function main_func() {
             const res = await removeSmsById(id);
             if (res?.result === 'success') {
                 if (!flag) {
+                    try {
+                        //尝试删除element
+                        message.parentElement.parentElement.remove()
+                    } catch { }
                     createToast(t('toast_delete_success'), 'green');
                 }
                 setTimeout(() => {
@@ -743,16 +747,29 @@ function main_func() {
 
     let isFirstRender = true
     let lastRequestSmsIds = null
+    let cachedSmsRes = null
     let handleSmsRender = async () => {
         let list = document.querySelector('#sms-list')
         if (!list) createToast(t('toast_sms_list_node_not_found'), 'red')
         if (isFirstRender) {
             list.innerHTML = ` <li><h2 style="padding: 30px;text-align:center;height:100vh">Loading...</h2></li>`
         }
-        isFirstRender = false
         showModal('#smsList')
-        let res = await getSms()
-        if (res && res.length) {
+        let res = null
+        try {
+            res = await getSms()
+        } catch (e) {
+            res = null
+        }
+        if (res && (res.length > 0)) {
+            cachedSmsRes = safeClone(res)
+        } else {
+            if (isFirstRender == true) {
+                return
+            }
+            res = cachedSmsRes
+        }
+        if (res && (res.length > 0)) {
             //防止重复渲染
             let ids = res.map(item => item.id).join('')
             if (ids === lastRequestSmsIds) return
@@ -802,6 +819,7 @@ function main_func() {
             }
             list.innerHTML = ` <li> <h2 style="padding: 30px;text-align:center;">${t('no_sms')}</h2></li >`
         }
+        isFirstRender = false
     }
 
     let cachedDiagImeiQueryResult = ''
