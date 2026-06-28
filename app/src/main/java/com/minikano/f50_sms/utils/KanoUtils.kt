@@ -1194,5 +1194,17 @@ class KanoUtils {
                 AppMeta.isReachedDataFlowLimit = false
             }
         }
+
+        fun getVendorName(): String? {
+            return try {
+                val process = Runtime.getRuntime().exec("getprop ro.vendor.product.ztename")
+                val result = process.inputStream.bufferedReader().readText()
+                result
+                    .trim()
+                    .takeIf { it.isNotEmpty() }
+            } catch (e: Exception) {
+                null
+            }
+        }
     }
 }

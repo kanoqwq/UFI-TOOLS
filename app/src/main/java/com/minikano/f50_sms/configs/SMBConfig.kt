@@ -2,12 +2,17 @@ package com.minikano.f50_sms.configs
 
 import android.content.Context
 import android.os.Build
+import com.minikano.f50_sms.utils.KanoUtils
 import java.io.File
 import java.io.IOException
 
 object SMBConfig {
     fun writeConfig(context: Context,command:String = "/system/bin/sh /data/data/com.minikano.f50_sms/files/samba_exec.sh"): String? {
-        val model = Build.MODEL
+        val zteModel = KanoUtils.getVendorName()?.trim()
+        var model = Build.MODEL
+        if(!zteModel.isNullOrEmpty()){
+            model = zteModel
+        }
         val fileName = "smb.conf"
         val presetString = """[global]
     workgroup = SAMBA
