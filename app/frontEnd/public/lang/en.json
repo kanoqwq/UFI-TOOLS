@@ -853,5 +853,8 @@
     "data_ref": "Data Ref",
     "data_limit_status_forward_notify": "Notify on disconnect? (SMS forwarding required)",
     "change_pass_tip1": "Please change the official web panel password through the UFI-TOOLS management page. Do not modify it directly in the official panel. Otherwise, the password saved by UFI-TOOLS may become inconsistent with the actual password, causing scheduled tasks and other functions to stop working properly!",
-    "change_pass_tip2": "The password currently saved by UFI-TOOLS is:"
+    "change_pass_tip2": "The password currently saved by UFI-TOOLS is:",
+    "plugin_override_mod": "Plugin exists, overwritten install",
+    "export": "Export",
+    "reinstall": "Reinstall"
 }

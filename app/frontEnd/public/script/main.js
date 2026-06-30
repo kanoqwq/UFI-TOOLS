@@ -5618,7 +5618,15 @@ echo ${flag ? '1' : '0'} > /sys/devices/system/cpu/cpu3/online
                             content: pluginContent
                         });
                     } else {
-                        msgs += `<p>${t('plugin')}:${pluginName} ${t('exists_skip')}</p>`
+                        //替换插件
+                        let index = plugins.findIndex(el => el.name === pluginName)
+                        if (index !== -1) {
+                            plugins[index] = {
+                                name: pluginName,
+                                content: pluginContent
+                            }
+                            msgs += `<p>${t('plugin_override_mod')}</p>`
+                        }
                     }
                 }
                 if (msgs) {
@@ -5639,7 +5647,14 @@ echo ${flag ? '1' : '0'} > /sys/devices/system/cpu/cpu3/online
                         });
                         createToast(t('toast_add_success_save_to_submit'), 'pink');
                     } else {
-                        createToast(t('same_plugin'), 'pink')
+                        let index = plugins.findIndex(el => el.name === pluginName)
+                        if (index !== -1) {
+                            plugins[index] = {
+                                name: pluginName,
+                                content: str
+                            }
+                            createToast(`${t('plugin_override_mod')}`, 'pink')
+                        }
                     }
                     resolve({ msg: 'added as single plugin' });
                 }
@@ -5647,6 +5662,18 @@ echo ${flag ? '1' : '0'} > /sys/devices/system/cpu/cpu3/online
                 renderPluginList();
             }
         })
+    }
+
+    const exportPlugin = () => {
+        try {
+            if (!currentEditPluginItem) throw Error("plugin not found")
+            const b = new Blob([currentEditPluginItem.content], { type: 'text/plain' })
+            saveAs(b, `${currentEditPluginItem.name}`)
+            createToast(t("download_ing"))
+        } catch (e) {
+            console.error(e)
+            createToast(t('download_failed'), 'red')
+        }
     }
 
     //插件导出
@@ -5673,6 +5700,8 @@ echo ${flag ? '1' : '0'} > /sys/devices/system/cpu/cpu3/online
     //初始化插件功能
     let sortable_plugin = null
     let plugins = []
+    let currentEditPluginItem = null
+    window.ufi_plugins = plugins
 
     const renderPluginList = () => {
         const listEl = document.getElementById('sortable-list')
@@ -5712,6 +5741,7 @@ echo ${flag ? '1' : '0'} > /sys/devices/system/cpu/cpu3/online
                 const editSinglePlugin = document.querySelector('#editSinglePlugin')
                 if (editSinglePlugin) {
                     const currentItem = item
+                    currentEditPluginItem = item
                     document.querySelector('#currentPluginName').textContent = currentItem.name
                     showModal('#editSinglePluginModal')
                     editSinglePlugin.value = currentItem.content
@@ -5819,7 +5849,7 @@ echo ${flag ? '1' : '0'} > /sys/devices/system/cpu/cpu3/online
                 // 提取插件
                 const pluginRegex = /<!--\s*\[KANO_PLUGIN_START\]\s*(.*?)\s*-->([\s\S]*?)<!--\s*\[KANO_PLUGIN_END\]\s*\1\s*-->/g;
 
-                plugins = []
+                plugins.length = 0
                 let match
                 while ((match = pluginRegex.exec(text)) !== null) {
                     const name = match[1].trim()
@@ -6206,6 +6236,7 @@ echo ${flag ? '1' : '0'} > /sys/devices/system/cpu/cpu3/online
         const items_el = document.querySelector('#plugin_store .plugin-items')
         items_el.innerHTML = '' //清空之前的内容
         items.forEach(plugin => {
+            const exsits_plugin_index = plugins.findIndex(el => el.name == plugin.name)
             const li = document.createElement('li')
             li.className = 'plugin-item'
             li.innerHTML = `
@@ -6217,7 +6248,7 @@ echo ${flag ? '1' : '0'} > /sys/devices/system/cpu/cpu3/online
                                 <span>last-modified: ${new Date(plugin?.modified).toLocaleString('zh-cn')}</span>
                             </div>
                             <div class="actions">
-                                <button onclick="installPluginFromStore('${download_url}/${plugin.name}','${plugin.name}')">${t('one_click_install')}</button>
+                                <button style="background:${exsits_plugin_index === -1 ? '' : 'var(--dark-btn-color-active)'}" onclick="installPluginFromStore('${download_url}/${plugin.name}','${plugin.name}')">${exsits_plugin_index === -1 ? t('one_click_install') : t('reinstall')}</button>
                                 <button onclick="downloadUrl('${download_url}/${plugin.name}')">${t('only_download')}</button>
                             </div>
                         `
@@ -8191,6 +8222,7 @@ echo ${flag ? '1' : '0'} > /sys/devices/system/cpu/cpu3/online
     // initSimCardPin()
     //挂载方法到window
     const methods = {
+        exportPlugin,
         handleUFIDataManagementFormSubmit,
         switchDataMgrMethodTab,
         handleVoLTE,

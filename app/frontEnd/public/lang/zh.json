@@ -854,5 +854,8 @@
     "data_ref": "流量参考",
     "data_limit_status_forward_notify": "断网时通知(需开启短信转发)？",
     "change_pass_tip1": "请务必通过 UFI-TOOLS 管理页面修改官方后台密码，请勿直接在官方后台修改。否则 UFI-TOOLS 保存的密码将与实际密码不一致，导致定时任务等功能无法正常使用！",
-    "change_pass_tip2": "当前UFI-TOOLS保存的密码为："
+    "change_pass_tip2": "当前UFI-TOOLS保存的密码为：",
+    "plugin_override_mod": "插件存在，已覆盖安装",
+    "export": "导出",
+    "reinstall": "重新安装"
 }

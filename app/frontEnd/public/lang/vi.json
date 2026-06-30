@@ -853,5 +853,8 @@
     "data_ref": "Nguồn DL",
     "data_limit_status_forward_notify": "Thông báo khi ngắt mạng? (Cần chuyển tiếp SMS)",
     "change_pass_tip1": "Vui lòng đổi mật khẩu trang quản trị chính thức thông qua giao diện quản lý UFI-TOOLS. Không thay đổi trực tiếp trong trang quản trị chính thức. Nếu không, mật khẩu được UFI-TOOLS lưu có thể không khớp với mật khẩu thực tế, khiến các chức năng như tác vụ định kỳ không hoạt động bình thường!",
-    "change_pass_tip2": "Mật khẩu hiện đang được UFI-TOOLS lưu là:"
+    "change_pass_tip2": "Mật khẩu hiện đang được UFI-TOOLS lưu là:",
+    "plugin_override_mod": "Plugin đã tồn tại, cài đặt ghi đè",
+    "export": "Xuất",
+    "reinstall": "Cài đặt lại"
 }

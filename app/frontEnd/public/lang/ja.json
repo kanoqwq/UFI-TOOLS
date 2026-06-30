@@ -853,5 +853,8 @@
     "data_ref": "通信量参照",
     "data_limit_status_forward_notify": "通信停止時に通知する？（SMS転送必須）",
     "change_pass_tip1": "公式管理画面のパスワードは必ずUFI-TOOLS管理画面から変更してください。公式管理画面で直接変更しないでください。変更すると、UFI-TOOLSに保存されたパスワードと実際のパスワードが一致しなくなり、定時タスクなどの機能が正常に利用できなくなる場合があります！",
-    "change_pass_tip2": "現在UFI-TOOLSに保存されているパスワード："
+    "change_pass_tip2": "現在UFI-TOOLSに保存されているパスワード：",
+    "plugin_override_mod": "プラグイン存在、上書きインストール済み",
+    "export": "Export",
+    "reinstall": "再インストール"
 }
