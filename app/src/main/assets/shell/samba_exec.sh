@@ -270,30 +270,17 @@ permission_keep(){
 }
 
 #net accelerate
-net_accelerate(){
-      iptables -D INPUT -j zte_fw_net_limit
-      iptables -F zte_fw_net_limit
-      iptables -X zte_fw_net_limit
-      tc qdisc del dev sipa_eth0 root 2>/dev/null
-      tc qdisc del dev sipa_eth0 ingress 2>/dev/null
-      tc qdisc del dev br0 root 2>/dev/null
-      tc qdisc del dev br0 ingress 2>/dev/null
-      tc qdisc del dev wlan0 root 2>/dev/null
-      tc qdisc del dev wlan0 ingress 2>/dev/null
-      tc qdisc del dev sipa_eth0 root    2>/dev/null
-      tc qdisc del dev sipa_eth0 ingress 2>/dev/null
-      tc qdisc del dev sipa_eth0 clsact  2>/dev/null
-      for dev in $(ls /sys/class/net); do
-          tc qdisc del dev "$dev" root 2>/dev/null
-          tc qdisc del dev "$dev" ingress 2>/dev/null
-      done
+net_accelerate() {
+    iptables -D INPUT -j zte_fw_net_limit 2>/dev/null
+    iptables -F zte_fw_net_limit 2>/dev/null
+    iptables -X zte_fw_net_limit 2>/dev/null
 
-      IFACES=$(ip link show | awk -F: '$0 !~ "lo|^[^0-9]"{print $2;}' | tr -d ' ')
+    tc qdisc del dev sipa_eth0 clsact 2>/dev/null
 
-      for IFACE in $IFACES; do
-          tc qdisc del dev "$IFACE" root 2>/dev/null
-          tc qdisc del dev "$IFACE" ingress 2>/dev/null
-      done
+    for dev in $(ls /sys/class/net); do
+        tc qdisc del dev "$dev" root 2>/dev/null
+        tc qdisc del dev "$dev" ingress 2>/dev/null
+    done
 }
 
 disable_fota(){
@@ -361,7 +348,6 @@ boot_up_script() {
   ip6tables -A INPUT -p udp --dport 5001 -j DROP
   ip6tables -A INPUT -p udp --dport 5002 -j DROP
   iptables -I INPUT 1 -i lo -j ACCEPT
-  iptables -I OUTPUT 1 -i lo -j ACCEPT
 
   echo "$UNLOCK_SAMBA_CONF" > /cache/unlock_samba.sh
   echo "$UNLOCK_SAMBA_CONF" > /sdcard/unlock_samba.sh
