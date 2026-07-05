@@ -2,12 +2,13 @@ package com.minikano.f50_sms.utils
 
 import android.content.Context
 import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import java.security.MessageDigest
-import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 import java.util.Base64
@@ -18,19 +19,17 @@ class KanoDingTalk(
     private val webhookUrl: String,
     private val secret: String? = null
 ) {
-    // 防止重复发送
-    private val isSending = AtomicBoolean(false)
+    companion object {
+        // 单线程串行发送：限制并发（最多1线程，空闲30秒后回收），排队而非丢弃。
+        // 必须跨实例共享——调用方每次转发都会 new 一个 KanoDingTalk
+        private val sender = ThreadPoolExecutor(0, 1, 30L, TimeUnit.SECONDS, LinkedBlockingQueue())
+    }
 
     fun sendMessage(content: String) {
-        // 如果已经在发送中，则直接返回
-        if (!isSending.compareAndSet(false, true)) {
-            KanoLog.w("UFI_TOOLS_LOG_DingTalk", "钉钉消息正在发送中，忽略重复发送")
-            return
-        }
-
-        Thread {
+        sender.execute {
             try {
-                val client = OkHttpClient()
+                // 共享客户端自带超时，发送线程最多阻塞 callTimeout（30 秒），不会永久挂起
+                val client = KanoHttp.client
                 val mediaType = "application/json; charset=utf-8".toMediaType()
                 
                 // 构建消息内容
@@ -64,20 +63,16 @@ class KanoDingTalk(
                     .build()
 
                 KanoLog.d("UFI_TOOLS_LOG_DingTalk", "开始发送钉钉消息...")
-                val response = client.newCall(request).execute()
-                
-                if (response.isSuccessful) {
-                    KanoLog.d("UFI_TOOLS_LOG_DingTalk", "钉钉消息发送成功")
-                } else {
-                    KanoLog.e("UFI_TOOLS_LOG_DingTalk", "钉钉消息发送失败: ${response.code}")
+                client.newCall(request).execute().use { response ->
+                    if (response.isSuccessful) {
+                        KanoLog.d("UFI_TOOLS_LOG_DingTalk", "钉钉消息发送成功")
+                    } else {
+                        KanoLog.e("UFI_TOOLS_LOG_DingTalk", "钉钉消息发送失败: ${response.code}")
+                    }
                 }
-                
-                response.close()
             } catch (e: Exception) {
                 KanoLog.e("UFI_TOOLS_LOG_DingTalk", "钉钉消息发送异常: ${e.message}", e)
-            } finally {
-                isSending.set(false)
             }
-        }.start()
+        }
     }
 } 

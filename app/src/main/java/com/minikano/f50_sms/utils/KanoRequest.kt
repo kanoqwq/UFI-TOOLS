@@ -1,6 +1,5 @@
 package com.minikano.f50_sms.utils
 import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
@@ -12,7 +11,7 @@ import java.io.File
 class KanoRequest {
     companion object {
         fun postJson(url: String, json: String): Response {
-            val client = OkHttpClient()
+            val client = KanoHttp.client
 
             val mediaType = "application/json; charset=utf-8".toMediaType()
             val body = json.toRequestBody(mediaType)
@@ -26,7 +25,7 @@ class KanoRequest {
         }
 
         fun getTextFromUrl(url: String): String? {
-            val client = OkHttpClient()
+            val client = KanoHttp.client
 
             val request = Request.Builder()
                 .url(url)
@@ -52,7 +51,7 @@ class KanoRequest {
             outputFile: File,
             onProgress: (percent: Int) -> Unit
         ): String? {
-            val client = OkHttpClient()
+            val client = KanoHttp.downloadClient
             val request = Request.Builder().url(url).build()
 
             client.newCall(request).execute().use { response ->

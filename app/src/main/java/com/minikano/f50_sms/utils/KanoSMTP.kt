@@ -3,7 +3,9 @@ import java.util.*
 import javax.mail.*
 import javax.mail.internet.InternetAddress
 import javax.mail.internet.MimeMessage
-import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 
 class KanoSMTP(
     private val smtpHost: String,
@@ -11,22 +13,23 @@ class KanoSMTP(
     private val username: String,
     private val password: String,
 ) {
-    // 防止重复发送
-    private val isSending = AtomicBoolean(false)
+    companion object {
+        // 单线程串行发送：限制并发（最多1线程，空闲30秒后回收），排队而非丢弃。
+        // 必须跨实例共享——调用方每次转发都会 new 一个 KanoSMTP
+        private val sender = ThreadPoolExecutor(0, 1, 30L, TimeUnit.SECONDS, LinkedBlockingQueue())
+    }
 
     fun sendEmail(to: String, subject: String, body: String,isHTML:Boolean=true) {
-        // 如果已经在发送中，则直接返回
-        if (!isSending.compareAndSet(false, true)) {
-            KanoLog.w("UFI_TOOLS_LOG", "邮件正在发送中，忽略重复发送")
-            return
-        }
-
-        Thread {
+        sender.execute {
             try {
                 val props = Properties()
                 props["mail.smtp.auth"] = "true"
                 props["mail.smtp.host"] = smtpHost
                 props["mail.smtp.port"] = smtpPort
+                // JavaMail 默认超时为无限，目标不可达时发送线程会永久挂起并逐渐堆积
+                props["mail.smtp.connectiontimeout"] = "10000"
+                props["mail.smtp.timeout"] = "15000"
+                props["mail.smtp.writetimeout"] = "15000"
 
                 if (smtpPort == "465") {
                     props["mail.smtp.ssl.enable"] = "true"
@@ -60,9 +63,7 @@ class KanoSMTP(
 
             } catch (e: Exception) {
                 KanoLog.e("UFI_TOOLS_LOG", "$username 邮件发送失败: ${e.message}", e)
-            } finally {
-                isSending.set(false)
             }
-        }.start()
+        }
     }
 }

@@ -9,7 +9,7 @@ import org.json.JSONObject
 import java.security.MessageDigest
 
 class KanoGoformRequest(private val baseUrl: String) {
-    private val client = OkHttpClient()
+    private val client = KanoHttp.client
     private val commonHeaders = mapOf(
         "Referer" to "$baseUrl/index.html",
         "Host" to baseUrl.replace("https://", "").replace("http://", ""),
