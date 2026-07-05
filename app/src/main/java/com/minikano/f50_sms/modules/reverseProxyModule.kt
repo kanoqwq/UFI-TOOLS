@@ -11,16 +11,25 @@ import io.ktor.server.response.respond
 import io.ktor.server.response.respondBytes
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.route
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.net.HttpURLConnection
 import java.net.URL
 
 const val TAG = "[$BASE_TAG]_reverseProxyModule"
 
-//反向代理官方后端
-fun Route.reverseProxyModule(targetServerIP:String) {
-    //转发到原厂web后端
+private data class ProxyResult(
+    val responseCode: Int,
+    val responseBytes: ByteArray,
+    val responseContentType: String,
+    val setCookies: List<String>
+)
+
+// 反向代理官方后端
+fun Route.reverseProxyModule(targetServerIP: String) {
+    // 转发到原厂web后端
     route("/api/goform/{...}") {
-        KanoLog.d(TAG,"开始反向代理资源...")
+        KanoLog.d(TAG, "开始反向代理资源...")
         handle {
             val targetServer = "http://${targetServerIP}"
             val originalPath = call.request.uri.removePrefix("/api")
@@ -45,55 +54,103 @@ fun Route.reverseProxyModule(targetServerIP:String) {
             }
 
             try {
-                val url = URL(fullUrl)
-                val conn = (url.openConnection() as HttpURLConnection).apply {
-                    requestMethod = method
-                    doInput = true
-                    setRequestProperty("Referer", null)
-                    setRequestProperty("Referer", targetServer)
-                    val ck = call.request.headers["Kano-Cookie"]
-                    if(!ck.isNullOrBlank()) {
-                        setRequestProperty("Cookie", ck)
-                    }
+                // 先在 Ktor 协程里读取请求信息，避免在 IO 线程里直接操作 call
+                val kanoCookie = call.request.headers["Kano-Cookie"]
 
-                    call.request.headers.forEach { key, values ->
-                        // 忽略客户端 Referer host
-                        if (!key.equals("host", ignoreCase = true) &&
-                            !key.equals("referer", ignoreCase = true) &&
-                            !key.equals("cookie", true)
+                val requestHeaders = mutableListOf<Pair<String, List<String>>>()
+                call.request.headers.forEach { key, values ->
+                    requestHeaders.add(key to values)
+                }
+
+                val requestBodyBytes = if (method == "POST" || method == "PUT") {
+                    call.receiveText().toByteArray()
+                } else {
+                    null
+                }
+
+                val proxyResult = withContext(Dispatchers.IO) {
+                    val url = URL(fullUrl)
+                    val conn = (url.openConnection() as HttpURLConnection).apply {
+                        connectTimeout = 15_000
+                        readTimeout = 20_000
+
+                        requestMethod = method
+                        doInput = true
+
+                        setRequestProperty("Referer", targetServer)
+
+                        if (!kanoCookie.isNullOrBlank()) {
+                            setRequestProperty("Cookie", kanoCookie)
+                        }
+
+                        requestHeaders.forEach { (key, values) ->
+                            // 忽略客户端 Referer / Host / Cookie
+                            if (!key.equals("host", ignoreCase = true) &&
+                                !key.equals("referer", ignoreCase = true) &&
+                                !key.equals("cookie", ignoreCase = true)
                             ) {
-                            setRequestProperty(key, values.joinToString(","))
+                                setRequestProperty(key, values.joinToString(","))
+                            }
+                        }
+
+                        if (requestBodyBytes != null) {
+                            doOutput = true
+
+                            // 保持原行为：显式设置 Content-Length
+                            setRequestProperty("Content-Length", requestBodyBytes.size.toString())
+
+                            outputStream.use {
+                                it.write(requestBodyBytes)
+                            }
                         }
                     }
 
-                    if (method == "POST" || method == "PUT") {
-                        val body = call.receiveText()
-                        doOutput = true
-                        setRequestProperty("Content-Length", body.toByteArray().size.toString())
-                        outputStream.use { it.write(body.toByteArray()) }
+                    try {
+                        val responseCode = conn.responseCode
+                        val responseStream = if (responseCode in 200..299) {
+                            conn.inputStream
+                        } else {
+                            conn.errorStream
+                        }
+
+                        val responseBytes = responseStream?.use { it.readBytes() } ?: ByteArray(0)
+                        val responseContentType = conn.contentType ?: "text/plain"
+
+                        val setCookies = mutableListOf<String>()
+                        conn.headerFields.forEach { (key, values) ->
+                            if (key != null && key.equals("Set-Cookie", ignoreCase = true)) {
+                                values?.forEach { cookie ->
+                                    setCookies.add(cookie)
+                                }
+                            }
+                        }
+
+                        ProxyResult(
+                            responseCode = responseCode,
+                            responseBytes = responseBytes,
+                            responseContentType = responseContentType,
+                            setCookies = setCookies
+                        )
+                    } finally {
+                        conn.disconnect()
                     }
                 }
 
-                val responseCode = conn.responseCode
-                val responseStream = if (responseCode in 200..299) conn.inputStream else conn.errorStream
-                val responseBytes = responseStream.readBytes()
-                val responseContentType = conn.contentType ?: "text/plain"
-
-                conn.headerFields.forEach { (key, values) ->
-                    if (key != null && key.equals("Set-Cookie", ignoreCase = true)) {
-                        values?.forEach { cookie ->
-                            call.response.headers.append("kano-cookie", cookie)
-                        }
-                    }
+                proxyResult.setCookies.forEach { cookie ->
+                    call.response.headers.append("kano-cookie", cookie)
                 }
 
                 call.response.headers.append("Access-Control-Allow-Origin", "*")
                 call.response.headers.append("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
                 call.response.headers.append("Access-Control-Allow-Headers", "Content-Type, X-Requested-With")
 
-                call.respondBytes(responseBytes, ContentType.parse(responseContentType), HttpStatusCode.fromValue(responseCode))
+                call.respondBytes(
+                    proxyResult.responseBytes,
+                    ContentType.parse(proxyResult.responseContentType),
+                    HttpStatusCode.fromValue(proxyResult.responseCode)
+                )
             } catch (e: Exception) {
-                KanoLog.e(TAG,"转发出错",e)
+                KanoLog.e(TAG, "转发出错", e)
                 call.respond(HttpStatusCode.InternalServerError, "Proxy error: ${e.message}")
             }
         }

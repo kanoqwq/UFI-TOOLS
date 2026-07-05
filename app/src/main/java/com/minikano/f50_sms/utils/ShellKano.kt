@@ -20,33 +20,68 @@ class ShellKano {
     companion object {
         const val PREFS_NAME = "kano_ZTE_store"
 
-        fun runShellCommand(command: String?, escaped: Boolean = false): String? {
+        fun runShellCommand(command: String?, escaped: Boolean = false,timeoutSec: Long = 60L): String? {
+
+            if (command.isNullOrBlank()) return null
+
             val output = StringBuilder()
-            try {
-                var process = Runtime.getRuntime().exec(command)
-                if (escaped) {
-                    process = Runtime.getRuntime().exec(arrayOf("sh", "-c", command))
-                }
-                val reader = BufferedReader(
-                    InputStreamReader(process.inputStream)
-                )
+            val error = StringBuilder()
 
-                var line: String?
-                while ((reader.readLine().also { line = it }) != null) {
-                    output.append(line).append("\n")
+            return try {
+
+                val process = if (escaped) {
+                    Runtime.getRuntime().exec(arrayOf("sh", "-c", command))
+                } else {
+                    Runtime.getRuntime().exec(command)
                 }
 
-                reader.close()
-                process.waitFor()
-            } catch (e: IOException) {
+                val reader = process.inputStream.bufferedReader()
+                val errorReader = process.errorStream.bufferedReader()
+
+                val outThread = Thread {
+                    try {
+                        reader.useLines { lines ->
+                            lines.forEach { line ->
+                                output.appendLine(line)
+                            }
+                        }
+                    } catch (_: Exception) {}
+                }
+
+                val errThread = Thread {
+                    try {
+                        errorReader.useLines { lines ->
+                            lines.forEach { line ->
+                                error.appendLine(line)
+                            }
+                        }
+                    } catch (_: Exception) {}
+                }
+
+                outThread.start()
+                errThread.start()
+
+                // 默认 60s 超时
+                val finished = process.waitFor(timeoutSec, TimeUnit.SECONDS)
+
+                if (!finished) {
+                    process.destroyForcibly()
+                    return null
+                }
+
+                outThread.join()
+                errThread.join()
+
+                if (error.isNotEmpty()) {
+                    null
+                } else {
+                    output.toString().trim()
+                }
+
+            } catch (e: Exception) {
                 e.printStackTrace()
-                return null
-            } catch (e: InterruptedException) {
-                e.printStackTrace()
-                return null
+                null
             }
-
-            return output.toString().trim { it <= ' ' }
         }
 
         fun runShellCommand(command: String?, context: Context): String? {
