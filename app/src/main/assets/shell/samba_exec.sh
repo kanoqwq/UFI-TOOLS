@@ -13,6 +13,7 @@ TTYD_PATH="/data/data/com.minikano.f50_sms/files/ttyd"
 LOGIN_PATH="/data/data/com.minikano.f50_sms/files/login.sh"
 BOOTUP_SCRIPT_PATH="/sdcard/ufi_tools_boot.sh"
 SCHEDULE_SCRIPT_PATH="/sdcard/ufi_tools_schedule.sh"
+KEEP_ALIVE_SCRIPT_PATH="$SOCKET_DIR/ufi_keep_alive.sh"
 
 UNLOCK_SAMBA_CONF='#!/system/bin/sh
 chattr -i /data/samba/etc/smb.conf
@@ -227,18 +228,21 @@ check_socat_running(){
   fi
 }
 
-keep_ufi_running(){
-    BOOTUP_NEED_OPEN_ACTIVITY=$1
-    PKG=com.minikano.f50_sms
-    ACT=com.minikano.f50_sms.MainActivity
-    if [ $BOOTUP_NEED_OPEN_ACTIVITY -eq 1 ]; then
-      echo "[`date`] BOOTUP! DO WAKE UP!!!" >> "$LOG_FILE"
-      am start -n "$PKG/$ACT" --ez silent true >/dev/null 2>&1 || true
+start_ufi_keep_alive() {
+    if [ ! -f "$KEEP_ALIVE_SCRIPT_PATH" ]; then
+        echo "[`date`] $KEEP_ALIVE_SCRIPT_PATH not found, keep-alive not started" >> "$LOG_FILE"
+        return 1
     fi
 
-    if ! pidof "$PKG" >/dev/null 2>&1; then
-      echo "[`date`] UFI_TOOLS NOT START,TRY TO WAKE UP!!!" >> "$LOG_FILE"
-      am start -n "$PKG/$ACT" --ez silent true >/dev/null 2>&1 || true
+    chmod +x "$KEEP_ALIVE_SCRIPT_PATH"
+    echo "[`date`] starting UFI-TOOLS keep-alive..." >> "$LOG_FILE"
+
+    # Disconnect all standard streams so the guard is independent of this
+    # Samba request. setsid is preferred when the device provides it.
+    if command -v setsid >/dev/null 2>&1; then
+        setsid sh "$KEEP_ALIVE_SCRIPT_PATH" </dev/null >/dev/null 2>&1 &
+    else
+        nohup sh "$KEEP_ALIVE_SCRIPT_PATH" </dev/null >/dev/null 2>&1 &
     fi
 }
 
@@ -321,6 +325,8 @@ close_thread_killer() {
 
 #boot_script
 boot_up_script() {
+  start_ufi_keep_alive
+
   if [ -f "$BOOTUP_SCRIPT_PATH" ]; then
       echo "[`date`] exec $BOOTUP_SCRIPT_PATH ..." >> "$LOG_FILE"
       sh "$BOOTUP_SCRIPT_PATH"
@@ -365,6 +371,9 @@ boot_up_script() {
 
 #schedule_script(30s per time)
 schedule_script() {
+  # Also repair the guard after an app update or if the guard itself was killed.
+  start_ufi_keep_alive
+
   if [ -f "$SCHEDULE_SCRIPT_PATH" ]; then
       sh "$SCHEDULE_SCRIPT_PATH"
   else
@@ -377,7 +386,6 @@ schedule_script() {
   check_log_file
   check_ttyd_running
   check_socat_running
-  keep_ufi_running 0
   socat_guard_once >> "$LOG_FILE" 2>&1 &
 }
 
@@ -400,7 +408,6 @@ if [ "$uptime_seconds" -lt "$THRESHOLD" ]; then
     if [ "$boot_time" -ne "$last_boot_time" ]; then
         echo "[`date`] detected new boot, running boot_up_script..." >> "$LOG_FILE"
         boot_up_script
-        keep_ufi_running 1
         echo "$boot_time" > "$FLAG_FILE"; sync
     else
         echo "[`date`] same boot_time detected, skipping boot_up_script. Running schedule_script instead..." >> "$LOG_FILE"
