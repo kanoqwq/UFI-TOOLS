@@ -53,12 +53,16 @@ fun Route.advancedToolsModule(context: Context, targetServerIP: String) {
             val outFileSmbSh =
                 KanoUtils.copyFileToFilesDir(context, "shell/samba_exec.sh", false)
                     ?: throw Exception("复制 samba_exec.sh 到 filesDir 失败")
+            val outFileKeepAliveSh =
+                KanoUtils.copyFileToFilesDir(context, "shell/ufi_keep_alive.sh", false)
+                    ?: throw Exception("复制 ufi_keep_alive.sh 到 filesDir 失败")
 
             // 设置执行权限
             outFileAdb.setExecutable(true)
             outFileTtyd.setExecutable(true)
             outFileSocat.setExecutable(true)
             outFileSmbSh.setExecutable(true)
+            outFileKeepAliveSh.setExecutable(true)
 
             var jsonResult = """{"result":"执行成功<br>Execution successful！"}"""
 
@@ -115,6 +119,12 @@ fun Route.advancedToolsModule(context: Context, targetServerIP: String) {
                 chmod 777 /data/samba/etc/smb.conf
                 chattr -i /data/samba/etc/smb.conf
                 rm -f /data/samba/etc/smb.conf
+                KEEP_ALIVE_LOCK=/data/local/tmp/ufi_keep_alive.lock
+                KEEP_ALIVE_PID=${'$'}(cat ${'$'}KEEP_ALIVE_LOCK/pid 2>/dev/null)
+                if [ -n "${'$'}KEEP_ALIVE_PID" ] && [ -r "/proc/${'$'}KEEP_ALIVE_PID/cmdline" ] && tr '\\000' ' ' < "/proc/${'$'}KEEP_ALIVE_PID/cmdline" | grep ufi_keep_alive.sh >/dev/null 2>&1; then
+                    kill "${'$'}KEEP_ALIVE_PID" 2>/dev/null || true
+                fi
+                rm -rf ${'$'}KEEP_ALIVE_LOCK
                 sync
             """.trimIndent()
 
