@@ -427,14 +427,14 @@ class ShellKano {
             timeoutMs: Long = 20000,  // 默认最多等20秒
             onTimeout: (() -> Unit)? = null  // 超时回调
         ): String? {
+            var process: Process? = null
+            var readerThread: Thread? = null
             return try {
-                val assetManager = context.assets
-                val inputStream = assetManager.open(assetSubPath)
                 val fileName = File(assetSubPath).name
                 val outFile = File(context.filesDir, fileName)
 
                 if (!outFile.exists()) {
-                    inputStream.use { input ->
+                    context.assets.open(assetSubPath).use { input ->
                         FileOutputStream(outFile).use { output ->
                             input.copyTo(output)
                         }
@@ -453,43 +453,84 @@ class ShellKano {
 
                 KanoLog.d("UFI_TOOLS_LOG", "执行命令: ${command.joinToString(" ")}")
 
-                val process = ProcessBuilder(command)
+                val startedProcess = ProcessBuilder(command)
                     .redirectErrorStream(true)
                     .apply {
                         environment()["HOME"] = context.filesDir.absolutePath
                     }
                     .start()
+                process = startedProcess
 
                 // 启动线程读输出
-                val outputBuilder = StringBuilder()
-                val readerThread = Thread {
+                val outputBuilder = StringBuffer()
+                readerThread = Thread {
                     try {
-                        process.inputStream.bufferedReader().forEachLine {
-                            outputBuilder.appendLine(it)
+                        startedProcess.inputStream.bufferedReader().use { reader ->
+                            reader.forEachLine {
+                                outputBuilder.append(it).append('\n')
+                            }
                         }
                     } catch (e: Exception) {
-                        KanoLog.w("UFI_TOOLS_LOG", "读取进程输出异常：${e.message}")
+                        if (startedProcess.isAlive) {
+                            KanoLog.w("UFI_TOOLS_LOG", "读取进程输出异常：${e.message}")
+                        }
                     }
+                }.apply {
+                    isDaemon = true
+                    start()
                 }
-                readerThread.start()
 
                 // 最多等待 timeoutMs 毫秒
-                val finished = process.waitFor(timeoutMs, TimeUnit.MILLISECONDS)
+                val finished = startedProcess.waitFor(timeoutMs, TimeUnit.MILLISECONDS)
 
                 if (!finished) {
                     KanoLog.w("UFI_TOOLS_LOG", "执行超时，强制销毁进程")
-                    process.destroy()
+                    startedProcess.destroy()
+
+                    if (!startedProcess.waitFor(300, TimeUnit.MILLISECONDS)) {
+                        startedProcess.destroyForcibly()
+                        startedProcess.waitFor(500, TimeUnit.MILLISECONDS)
+                    }
 
                     // 调用回调
-                    onTimeout?.invoke()
+                    try {
+                        onTimeout?.invoke()
+                    } catch (e: Exception) {
+                        KanoLog.w("UFI_TOOLS_LOG", "执行超时回调异常：${e.message}")
+                    }
+
+                    if (startedProcess.isAlive) {
+                        startedProcess.inputStream.close()
+                    }
+                    readerThread.join(500)
+                    return null
                 }
 
-                readerThread.join(100) // 最多等 100ms 等输出读完
+                // 进程退出后输出流会到达 EOF，等待读取线程完整收集输出。
+                readerThread.join()
                 outputBuilder.toString().trim()
 
+            } catch (e: InterruptedException) {
+                process?.let {
+                    it.destroy()
+                    if (it.isAlive) it.destroyForcibly()
+                }
+                Thread.currentThread().interrupt()
+                KanoLog.d("UFI_TOOLS_LOG", "命令执行被中断")
+                null
             } catch (e: Exception) {
+                process?.let {
+                    it.destroy()
+                    if (it.isAlive) it.destroyForcibly()
+                }
                 KanoLog.e("UFI_TOOLS_LOG", "执行异常: ${e.message}")
                 null
+            } finally {
+                process?.let {
+                    runCatching { it.outputStream.close() }
+                    runCatching { it.inputStream.close() }
+                    runCatching { it.errorStream.close() }
+                }
             }
         }
 
@@ -650,9 +691,16 @@ class ShellKano {
                         try {
                             runBlocking {
                                 //先等待最多30s，等待官方web后台完全启动
-                                val reachable = waitUntilReachable(ADB_IP, 30)
+                                val reachable = waitUntilReachable(ADB_IP)
                                 if (!reachable) {
                                     KanoLog.e("UFI_TOOLS_LOG", "官方WEB服务不可达，终止执行ADB自启操作")
+                                    return@runBlocking
+                                }
+                                //如果开启了高级功能，就不需要去开关ADB开关了
+                                //高级功能优先
+                                val advancedFuncReachable = KanoUtils.waitAdvancedFuncAndWakeAdbd(context)
+                                if(advancedFuncReachable) {
+                                    KanoLog.d("UFI_TOOLS_LOG", "使用高级功能打开adbd完成")
                                     return@runBlocking
                                 }
 

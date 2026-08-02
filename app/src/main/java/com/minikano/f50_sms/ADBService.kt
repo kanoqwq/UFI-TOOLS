@@ -7,11 +7,12 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.database.ContentObserver
 import android.os.Build
 import android.os.Handler
 import android.os.HandlerThread
-import android.os.PowerManager
-import com.minikano.f50_sms.utils.WakeLock
+import android.os.SystemClock
+import android.provider.Settings
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
@@ -38,19 +39,43 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import java.io.BufferedInputStream
+import java.io.DataInputStream
+import java.io.File
+import java.net.InetSocketAddress
+import java.net.Socket
 import java.util.concurrent.Executors
+import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 
 class ADBService : Service() {
-    private lateinit var runnable: Runnable
     private lateinit var handlerThread: HandlerThread
     private lateinit var handler: Handler
     private val adbExecutor = Executors.newSingleThreadExecutor()
+    private val adbMaintenanceExecutor = Executors.newSingleThreadExecutor()
+    private val adbWatchdogExecutor = Executors.newSingleThreadScheduledExecutor()
     private val iperfExecutor = Executors.newSingleThreadExecutor()
     private var disableFOTATimes = 3
 
     private  val TAG = "UFI_TOOLS_LOG_ADBService"
     private lateinit var batteryReceiver: BatteryReceiver
+    private val adbTaskStarted = AtomicBoolean(false)
+    private val adbMaintenanceStarted = AtomicBoolean(false)
+    private val adbWakeSignal = LinkedBlockingQueue<Unit>(1)
+    @Volatile private var adbTrackProcess: Process? = null
+    @Volatile private var serviceStopping = false
+    private var adbObserverRegistered = false
+
+    private val adbStateObserver = object : ContentObserver(null) {
+        override fun onChange(selfChange: Boolean) {
+            if (!isUsbDebuggingEnabled(applicationContext)) {
+                updateAdbReady(false, "ADB 已关闭")
+                adbTrackProcess?.destroy()
+            }
+            adbWakeSignal.offer(Unit)
+        }
+    }
 
     companion object {
         @Volatile
@@ -58,6 +83,16 @@ class ADBService : Service() {
         var isExecutedDisabledFOTA = false
         var isExecutingDisabledFOTA = false
         var isExecutedSambaMount = false
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+        contentResolver.registerContentObserver(
+            Settings.Global.getUriFor(Settings.Global.ADB_ENABLED),
+            false,
+            adbStateObserver
+        )
+        adbObserverRegistered = true
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -69,9 +104,6 @@ class ADBService : Service() {
             }
             handler = Handler(handlerThread.looper)
         }
-
-        //基本唤醒锁
-        WakeLock.exeBaseWakeLock(getSystemService(Context.POWER_SERVICE) as PowerManager)
 
         handler.removeCallbacks(runnableSMSAndDataFlowCheck)
         handler.removeCallbacks(runnableSMB)
@@ -275,7 +307,7 @@ class ADBService : Service() {
             } catch (e: Exception) {
                 KanoLog.e(TAG, "激活SMB内置脚本错误")
             }
-            handler.postDelayed(this, 20_000)
+            handler.postDelayed(this, 30_000)
         }
     }
 
@@ -303,99 +335,276 @@ class ADBService : Service() {
     }
 
     private fun startAdbKeepAliveTask(context: Context) {
+        if (!adbTaskStarted.compareAndSet(false, true)) {
+            KanoLog.d(TAG, "ADB 状态监听已经运行，跳过重复启动")
+            return
+        }
+
         adbExecutor.execute {
+            val retryDelaysMs = longArrayOf(2_000, 5_000, 10_000, 30_000, 60_000)
+            var retryIndex = 0
+            var nextAdbdWakeAllowedAtMs = 0L
+
             try {
-                val adbPath = "shell/adb"
+                val adbFile = File(context.filesDir, "adb")
+                adbFile.setExecutable(true)
 
-                while (!Thread.currentThread().isInterrupted) {
-                    val isDebugEnabled = isUsbDebuggingEnabled(context)
-                    if (!isDebugEnabled){
-                        KanoLog.d(TAG, "没有开启ADB，不执行ADB保活")
-                        adbIsReady = false
+                while (!serviceStopping && !Thread.currentThread().isInterrupted) {
+                    if (!isUsbDebuggingEnabled(context)) {
+                        updateAdbReady(false, "ADB 未启用")
+                        KanoLog.d(TAG, "ADB 未启用，等待系统设置变化")
+                        adbWakeSignal.take()
+                        retryIndex = 0
+                        continue
                     }
-                    else {
-                        KanoLog.d(TAG, "保活ADB服务中...")
 
-                        var result =
-                            executeShellFromAssetsSubfolderWithArgs(context, adbPath, "devices") {
-                                ShellKano.killProcessByName("adb")
-                            }
+                    if (!isLocalAdbPortOpen()) {
+                        updateAdbReady(false, "localhost:5555 端口不可用")
 
-                        if (result?.contains("localhost:5555\tdevice") == true) {
-                            KanoLog.d(TAG, "adb存活，无需启动")
-                            adbIsReady = true
-                            if (!isExecutedDisabledFOTA) {
-                                disableFOTATimes--
-                                if (disableFOTATimes <= 0) {
-                                    KanoLog.d(
-                                        TAG,
-                                        "已连续3次尝试使用adb禁用FOTA，强制isExecutingDisabledFOTA = true"
-                                    )
-                                    isExecutingDisabledFOTA = true
-                                }
-                                val res = KanoUtils.disableFota(applicationContext)
-                                if (res) {
-                                    KanoLog.d(TAG, "使用adb禁用FOTA完成")
-                                }
-                                isExecutedDisabledFOTA = true
-                            }
-                        } else {
-                            KanoLog.w(TAG, "adb无设备或已退出，尝试启动")
-                            adbIsReady = false
-
-                            ShellKano.killProcessByName("adb")
-                            Thread.sleep(1000)
-
-                            executeShellFromAssetsSubfolderWithArgs(
-                                context,
-                                adbPath,
-                                "connect",
-                                "localhost"
-                            ) {
-                                ShellKano.killProcessByName("adb")
-                            }
-
-                            val maxWaitMs = 5_000
-                            val interval = 500
-                            var waited = 0
-
-                            while (waited < maxWaitMs) {
-                                result = executeShellFromAssetsSubfolderWithArgs(
-                                    context,
-                                    adbPath,
-                                    "devices"
-                                ) {
-                                    ShellKano.killProcessByName("adb")
-                                }
-
-                                if (result?.contains("localhost:5555\tdevice") == true) {
-                                    KanoLog.d(TAG, "ADB连接成功: $result")
-                                    adbIsReady = true
-                                    break
-                                } else {
-                                    KanoLog.d(TAG, "ADB未连接: $result")
-                                }
-
-                                Thread.sleep(interval.toLong())
-                                waited += interval
-                            }
+                        val now = SystemClock.elapsedRealtime()
+                        if (now >= nextAdbdWakeAllowedAtMs &&
+                            KanoUtils.tryWakeAdbdViaAdvancedFunc(context)
+                        ) {
+                            nextAdbdWakeAllowedAtMs = now + 15_000
+                            retryIndex = 0
+                            KanoLog.d(TAG, "已请求高级功能拉起 adbd，1 秒后检查端口")
+                            adbWakeSignal.poll(1_000, TimeUnit.MILLISECONDS)
+                            continue
                         }
+
+                        retryIndex = waitForAdbRetry(retryDelaysMs, retryIndex)
+                        continue
                     }
-                    // 每 11 秒轮询一次
-                    Thread.sleep(11_000)
+
+                    val connectResult = executeShellFromAssetsSubfolderWithArgs(
+                        context,
+                        "shell/adb",
+                        "connect",
+                        "localhost",
+                        timeoutMs = 5_000
+                    )
+
+                    val connected = connectResult?.contains("connected to localhost:5555") == true
+                    if (!connected) {
+                        updateAdbReady(false, "adb connect 失败")
+                        KanoLog.w(TAG, "ADB 连接失败: $connectResult")
+                        retryIndex = waitForAdbRetry(retryDelaysMs, retryIndex)
+                        continue
+                    }
+
+                    KanoLog.d(TAG, "ADB 已连接，启动 track-devices 事件监听")
+                    val wasReady = try {
+                        monitorAdbDevices(adbFile, context)
+                    } catch (e: InterruptedException) {
+                        throw e
+                    } catch (e: Exception) {
+                        if (!serviceStopping && isUsbDebuggingEnabled(context)) {
+                            KanoLog.w(TAG, "track-devices 监听已断开: ${e.message}")
+                        }
+                        false
+                    }
+                    updateAdbReady(false, "track-devices 已结束")
+
+                    if (wasReady) {
+                        retryIndex = 0
+                    }
+                    retryIndex = waitForAdbRetry(retryDelaysMs, retryIndex)
                 }
+            } catch (e: InterruptedException) {
+                Thread.currentThread().interrupt()
+                KanoLog.d(TAG, "ADB 状态监听已停止")
             } catch (e: Exception) {
-                KanoLog.e(TAG, "ADB 保活线程异常", e)
+                if (!serviceStopping) {
+                    KanoLog.e(TAG, "ADB 状态监听异常", e)
+                }
+            } finally {
+                adbTrackProcess?.destroy()
+                adbTrackProcess = null
+                updateAdbReady(false, "ADB 状态监听已停止")
+                adbTaskStarted.set(false)
             }
         }
     }
 
+    private fun isLocalAdbPortOpen(): Boolean {
+        return try {
+            Socket().use { socket ->
+                socket.connect(InetSocketAddress("localhost", 5555), 500)
+            }
+            true
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    private fun waitForAdbRetry(delays: LongArray, retryIndex: Int): Int {
+        val delayMs = delays[retryIndex.coerceAtMost(delays.lastIndex)]
+        KanoLog.d(TAG, "${delayMs / 1000} 秒后重试 ADB 连接")
+        adbWakeSignal.poll(delayMs, TimeUnit.MILLISECONDS)
+        return (retryIndex + 1).coerceAtMost(delays.lastIndex)
+    }
+
+    private fun monitorAdbDevices(adbFile: File, context: Context): Boolean {
+        val process = ProcessBuilder(adbFile.absolutePath, "track-devices")
+            .apply {
+                environment()["HOME"] = context.filesDir.absolutePath
+            }
+            .start()
+        adbTrackProcess = process
+        var wasReady = false
+
+        val watchdog = adbWatchdogExecutor.scheduleWithFixedDelay(
+            {
+                if (!serviceStopping && adbIsReady && !isLocalAdbPortOpen()) {
+                    KanoLog.w(TAG, "ADB watchdog 检测到 localhost:5555 已关闭")
+                    updateAdbReady(false, "ADB watchdog 端口探测失败")
+                    process.destroy()
+                    adbWakeSignal.offer(Unit)
+                }
+            },
+            20_000,
+            20_000,
+            TimeUnit.MILLISECONDS
+        )
+
+        val errorReader = Thread({
+            try {
+                process.errorStream.bufferedReader().useLines { lines ->
+                    lines.filter { it.isNotBlank() }.forEach {
+                        KanoLog.w(TAG, "track-devices: $it")
+                    }
+                }
+            } catch (_: Exception) {
+                // 服务停止时关闭进程会打断流读取，无需记录错误。
+            }
+        }, "AdbTrackErrorReader").apply {
+            isDaemon = true
+            start()
+        }
+
+        try {
+            DataInputStream(BufferedInputStream(process.inputStream)).use { input ->
+                while (!serviceStopping && !Thread.currentThread().isInterrupted) {
+                    val lengthBytes = ByteArray(4)
+                    input.readFully(lengthBytes)
+                    val payloadLength = String(lengthBytes, Charsets.US_ASCII).toIntOrNull(16)
+                        ?: throw IllegalStateException("无效的 track-devices 数据长度")
+                    require(payloadLength in 0..64 * 1024) {
+                        "异常的 track-devices 数据长度: $payloadLength"
+                    }
+
+                    val payload = ByteArray(payloadLength)
+                    input.readFully(payload)
+                    val snapshot = String(payload, Charsets.UTF_8)
+                    val ready = snapshot.lineSequence().any { line ->
+                        val columns = line.trim().split(Regex("\\s+"), limit = 2)
+                        columns.size == 2 &&
+                            columns[0] == "localhost:5555" &&
+                            columns[1] == "device"
+                    }
+
+                    updateAdbReady(ready, "track-devices 状态变化")
+                    if (ready) {
+                        wasReady = true
+                        scheduleAdbReadyMaintenance()
+                    } else {
+                        break
+                    }
+                }
+            }
+        } catch (e: InterruptedException) {
+            throw e
+        } catch (e: Exception) {
+            if (!wasReady) throw e
+            if (!serviceStopping) {
+                KanoLog.d(TAG, "track-devices 连接已结束: ${e.message}")
+            }
+        } finally {
+            watchdog.cancel(true)
+            process.destroy()
+            errorReader.join(200)
+            if (adbTrackProcess === process) {
+                adbTrackProcess = null
+            }
+        }
+
+        return wasReady
+    }
+
+    private fun updateAdbReady(ready: Boolean, reason: String) {
+        if (adbIsReady != ready) {
+            KanoLog.d(TAG, "ADB 状态变更: $adbIsReady -> $ready ($reason)")
+            adbIsReady = ready
+        }
+    }
+
+    private fun scheduleAdbReadyMaintenance() {
+        if (serviceStopping || isExecutedDisabledFOTA ||
+            !adbMaintenanceStarted.compareAndSet(false, true)
+        ) {
+            return
+        }
+
+        try {
+            adbMaintenanceExecutor.execute {
+                try {
+                    handleAdbReady()
+                } catch (e: Exception) {
+                    KanoLog.e(TAG, "ADB 连接后维护任务异常", e)
+                } finally {
+                    adbMaintenanceStarted.set(false)
+                }
+            }
+        } catch (e: Exception) {
+            adbMaintenanceStarted.set(false)
+            if (!serviceStopping) {
+                KanoLog.e(TAG, "提交 ADB 连接后维护任务失败", e)
+            }
+        }
+    }
+
+    private fun handleAdbReady() {
+        if (isExecutedDisabledFOTA) return
+
+        disableFOTATimes--
+        if (disableFOTATimes <= 0) {
+            KanoLog.d(TAG, "已连续3次尝试使用adb禁用FOTA，强制isExecutingDisabledFOTA = true")
+            isExecutingDisabledFOTA = true
+        }
+        val result = KanoUtils.disableFota(applicationContext)
+        if (result) {
+            KanoLog.d(TAG, "使用adb禁用FOTA完成")
+        }
+        isExecutedDisabledFOTA = true
+    }
+
     override fun onDestroy() {
-        super.onDestroy()
-        handlerThread.quitSafely()
-        handler.removeCallbacks(runnable)
-        unregisterReceiver(batteryReceiver)
+        serviceStopping = true
+        updateAdbReady(false, "ADBService 正在销毁")
+        adbTrackProcess?.destroy()
+        adbWakeSignal.offer(Unit)
+
+        if (::handler.isInitialized) {
+            handler.removeCallbacksAndMessages(null)
+        }
+        if (::handlerThread.isInitialized) {
+            handlerThread.quitSafely()
+        }
+
+        adbExecutor.shutdownNow()
+        adbMaintenanceExecutor.shutdownNow()
+        adbWatchdogExecutor.shutdownNow()
+        iperfExecutor.shutdownNow()
+
+        if (::batteryReceiver.isInitialized) {
+            unregisterReceiver(batteryReceiver)
+        }
+        if (adbObserverRegistered) {
+            contentResolver.unregisterContentObserver(adbStateObserver)
+            adbObserverRegistered = false
+        }
         TaskSchedulerManager.scheduler?.stop()
+        super.onDestroy()
     }
 
     override fun onBind(intent: Intent?): IBinder? = null

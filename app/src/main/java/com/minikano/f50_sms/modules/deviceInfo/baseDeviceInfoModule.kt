@@ -8,9 +8,10 @@ import com.minikano.f50_sms.modules.PREFS_NAME
 import com.minikano.f50_sms.utils.KanoLog
 import com.minikano.f50_sms.utils.KanoUtils
 import com.minikano.f50_sms.utils.UniqueDeviceIDManager
-import com.minikano.f50_sms.utils.calculateCpuUsage
+import com.minikano.f50_sms.utils.getCpuUsageSnapshot
 import com.minikano.f50_sms.utils.getCpuFreqJson
-import com.minikano.f50_sms.utils.getMemoryUsage
+import com.minikano.f50_sms.utils.getMemoryUsageSnapshot
+import com.minikano.f50_sms.utils.initializeDeviceInfoSources
 import com.minikano.f50_sms.utils.readBatteryStatus
 import com.minikano.f50_sms.utils.readThermalZones
 import com.minikano.f50_sms.utils.readUsbDevices
@@ -22,10 +23,6 @@ import io.ktor.server.response.respondText
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.double
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import androidx.core.content.edit
 import com.minikano.f50_sms.utils.readNetConnCount
 import io.ktor.server.request.receiveText
@@ -38,6 +35,7 @@ data class MyStorageInfo(
 
 fun Route.baseDeviceInfoModule(context: Context) {
     val TAG = "[$BASE_TAG]_baseDeviceInfoModule"
+    initializeDeviceInfoSources()
 
     get("/api/baseDeviceInfo") {
         //客户端IP
@@ -80,21 +78,17 @@ fun Route.baseDeviceInfoModule(context: Context) {
         var memUsageRes: Double? = null
 
         try {
-            val usage = calculateCpuUsage()
+            val usageSnapshot = getCpuUsageSnapshot()
             val freq = getCpuFreqJson()
-            val mem = getMemoryUsage()
+            val memorySnapshot = getMemoryUsageSnapshot()
+            val usage = usageSnapshot.json
+            val mem = memorySnapshot.json
 
             KanoLog.d(TAG, "CPU频率数据：${freq}")
             KanoLog.d(TAG, "CPU使用数据：${usage}")
             KanoLog.d(TAG, "Mem使用数据：${mem}")
-            cpuUsageRes = Json.parseToJsonElement(usage)
-                .jsonObject["cpu"]
-                ?.jsonPrimitive
-                ?.double
-            memUsageRes = Json.parseToJsonElement(mem)
-                .jsonObject["mem_usage_percent"]
-                ?.jsonPrimitive
-                ?.double
+            cpuUsageRes = usageSnapshot.overallUsage
+            memUsageRes = memorySnapshot.usagePercent
             cpuFreqInfo = freq
             cpuUsageInfo = usage
             memInfo = mem

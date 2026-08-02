@@ -52,12 +52,15 @@ class WebService : Service() {
         UniqueDeviceIDManager.init(this)
         startForegroundNotification()
 
+        // Base PARTIAL_WAKE_LOCK 只由承载 Ktor 的核心服务持有。
+        val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
+        WakeLock.exeBaseWakeLock(pm)
+
         //检测IP变动，适应用户ip网段更改
         KanoUtils.adaptIPChange(applicationContext)
 
         val prefs = getSharedPreferences("kano_ZTE_store", Context.MODE_PRIVATE)
         val needWakeLock = prefs.getString("wakeLock", "lock") ?: "lock"
-        val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
         if(needWakeLock != "lock") {
             KanoLog.d("UFI_TOOLS_LOG","不需要唤醒锁，正在释放...")
             WakeLock.releaseWakeLock()
@@ -131,6 +134,7 @@ class WebService : Service() {
     override fun onDestroy() {
         unregisterReceiver(statusReceiver)
         stopWebServer()
+        WakeLock.releaseBaseWakeLock()
         super.onDestroy()
     }
 

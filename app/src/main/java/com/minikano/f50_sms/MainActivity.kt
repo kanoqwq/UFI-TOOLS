@@ -187,9 +187,6 @@ class MainActivity : ComponentActivity() {
                 delay(4600)
                 exitProcess(-114514)
             } else {
-                //基本唤醒锁
-                WakeLock.exeBaseWakeLock(getSystemService(Context.POWER_SERVICE) as PowerManager)
-
                 requestNotificationPermissionIfNeeded()
 
                 // 忽略电池优化权限

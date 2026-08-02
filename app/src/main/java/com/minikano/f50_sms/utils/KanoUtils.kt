@@ -37,10 +37,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.double
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import java.text.SimpleDateFormat
@@ -51,16 +47,26 @@ import kotlin.math.pow
 
 class KanoUtils {
     companion object {
+        private val WHITESPACE_REGEX = Regex("\\s+")
+        private val SHELL_ARG_REGEX = Regex("""(["'])(.*?)(?<!\\)\1|(\S+)""")
+        private val REPEATED_SLASHES_REGEX = Regex("/+")
+        private val LEADING_SLASHES_REGEX = Regex("^/+")
+        private val SHA256_HEX_REGEX = Regex("^[a-fA-F0-9]{64}$")
+        private const val HEX_CHARS = "0123456789abcdef"
+
         fun HmacSignature(secret: String, data: String): String {
             val hmacMd5Bytes = hmac("HmacMD5", secret, data)
             val mid = hmacMd5Bytes.size / 2
-            val part1 = hmacMd5Bytes.sliceArray(0 until mid)
-            val part2 = hmacMd5Bytes.sliceArray(mid until hmacMd5Bytes.size)
-            val sha1 = sha256(part1)
-            val sha2 = sha256(part2)
-            val combined = sha1 + sha2
-            val finalHash = sha256(combined)
-            return finalHash.joinToString("") { "%02x".format(it) }
+            val digest = MessageDigest.getInstance("SHA-256")
+
+            digest.update(hmacMd5Bytes, 0, mid)
+            val sha1 = digest.digest()
+            digest.update(hmacMd5Bytes, mid, hmacMd5Bytes.size - mid)
+            val sha2 = digest.digest()
+            digest.update(sha1)
+            digest.update(sha2)
+
+            return encodeHex(digest.digest())
         }
 
         fun hmac(algorithm: String, key: String, data: String): ByteArray {
@@ -76,9 +82,27 @@ class KanoUtils {
         }
 
         fun sha256Hex(input: String): String {
-            val bytes = input.toByteArray(Charsets.UTF_8)
-            val digest = MessageDigest.getInstance("SHA-256").digest(bytes)
-            return digest.joinToString("") { "%02x".format(it) }
+            return encodeHex(
+                MessageDigest.getInstance("SHA-256")
+                    .digest(input.toByteArray(Charsets.UTF_8))
+            )
+        }
+
+        fun constantTimeSha256Equals(first: String, second: String): Boolean {
+            val digest = MessageDigest.getInstance("SHA-256")
+            val firstHash = digest.digest(first.toByteArray(Charsets.UTF_8))
+            val secondHash = digest.digest(second.toByteArray(Charsets.UTF_8))
+            return MessageDigest.isEqual(firstHash, secondHash)
+        }
+
+        private fun encodeHex(bytes: ByteArray): String {
+            val chars = CharArray(bytes.size * 2)
+            bytes.forEachIndexed { index, byte ->
+                val value = byte.toInt() and 0xff
+                chars[index * 2] = HEX_CHARS[value ushr 4]
+                chars[index * 2 + 1] = HEX_CHARS[value and 0x0f]
+            }
+            return String(chars)
         }
 
         fun Long.toReadableSize(decimals: Int = 2): String {
@@ -305,7 +329,7 @@ class KanoUtils {
             val memMap = mutableMapOf<String, Long>()
 
             meminfo.lines().forEach { line ->
-                val parts = line.split(Regex("\\s+"))
+                val parts = line.split(WHITESPACE_REGEX)
                 if (parts.size >= 2) {
                     val key = parts[0].removeSuffix(":")
                     val value = parts[1].toLongOrNull() ?: return@forEach
@@ -324,7 +348,7 @@ class KanoUtils {
 
         fun parseCpuStat(raw: String): Pair<Long, Long>? {
             val line = raw.lines().firstOrNull { it.startsWith("cpu ") } ?: return null
-            val parts = line.trim().split(Regex("\\s+"))
+            val parts = line.trim().split(WHITESPACE_REGEX)
             if (parts.size < 8) return null
 
             val user = parts[1].toLongOrNull() ?: return null
@@ -473,8 +497,7 @@ class KanoUtils {
         }
 
         fun parseShellArgs(command: String): List<String> {
-            val matcher = Regex("""(["'])(.*?)(?<!\\)\1|(\S+)""") // 处理单引号/双引号/无引号的参数
-            return matcher.findAll(command).map {
+            return SHELL_ARG_REGEX.findAll(command).map {
                 val quoted = it.groups[2]?.value
                 val plain = it.groups[3]?.value
                 when {
@@ -833,7 +856,7 @@ class KanoUtils {
 
             p = p.replace('\\', '/')
 
-            p = p.replace(Regex("/+"), "/")
+            p = p.replace(REPEATED_SLASHES_REGEX, "/")
 
             if (!p.startsWith("/")) p = "/$p"
 
@@ -842,13 +865,13 @@ class KanoUtils {
 
         fun normalizeLeadingSlashes(p: String): String {
             var s = p.replace('\\', '/')
-            s = s.replace(Regex("^/+"), "/")
+            s = s.replace(LEADING_SLASHES_REGEX, "/")
             if (!s.startsWith("/")) s = "/$s"
             return s
         }
 
         fun isSha256Hex(s: String?): Boolean {
-            return !s.isNullOrBlank() && Regex("^[a-fA-F0-9]{64}$").matches(s)
+            return !s.isNullOrBlank() && SHA256_HEX_REGEX.matches(s)
         }
 
         fun transformLoginToken(context: Context,prefs: SharedPreferences){
@@ -1028,20 +1051,12 @@ class KanoUtils {
                         "{{nickname}}" ,
                     )
                     if(replacedCurl.contains(templates[0])){
-                        val usage = calculateCpuUsage()
-                        val cpuUsageRes = Json.parseToJsonElement(usage)
-                            .jsonObject["cpu"]
-                            ?.jsonPrimitive
-                            ?.double
+                        val cpuUsageRes = getCpuUsageSnapshot().overallUsage
                         replacedCurl = replacedCurl
                             .replace(templates[0],"${cpuUsageRes}%")
                     }
                     if(replacedCurl.contains(templates[1])){
-                        val mem = getMemoryUsage()
-                        val memUsageRes = Json.parseToJsonElement(mem)
-                            .jsonObject["mem_usage_percent"]
-                            ?.jsonPrimitive
-                            ?.double
+                        val memUsageRes = getMemoryUsageSnapshot().usagePercent
                         replacedCurl = replacedCurl
                             .replace(templates[1],"${memUsageRes}%")
                     }
@@ -1205,6 +1220,84 @@ class KanoUtils {
             } catch (e: Exception) {
                 null
             }
+        }
+
+        fun tryWakeAdbdViaAdvancedFunc(context: Context): Boolean {
+            val socketPath = File(context.filesDir, "kano_root_shell.sock")
+            if (!socketPath.exists()) {
+                return false
+            }
+
+            val currentUser = RootShell.sendCommandToSocket(
+                "whoami",
+                socketPath.absolutePath,
+                timeout = 2_000
+            )?.trim()
+            if (currentUser != "root") {
+                KanoLog.d("UFI_TOOLS_LOG", "高级功能 socket 当前不可用或不是 root")
+                return false
+            }
+
+            val result = RootShell.sendCommandToSocket(
+                """
+                    setprop service.adb.tcp.port 5555
+                    port_status=${'$'}?
+                    actual_port="${'$'}(getprop service.adb.tcp.port)"
+                    setprop ctl.restart adbd
+                    restart_status=${'$'}?
+                    printf 'KANO_ADBD_WAKE_STATUS=%s:%s:%s\n' "${'$'}port_status" "${'$'}restart_status" "${'$'}actual_port"
+                """.trimIndent(),
+                socketPath.absolutePath,
+                timeout = 3_000
+            ) ?: return false
+
+            val success = result.lineSequence().any {
+                it.trim() == "KANO_ADBD_WAKE_STATUS=0:0:5555"
+            }
+            if (success) {
+                KanoLog.d("UFI_TOOLS_LOG", "已通过高级功能提交 adbd 重启")
+            } else {
+                KanoLog.w("UFI_TOOLS_LOG", "高级功能唤醒 adbd 失败: $result")
+            }
+            return success
+        }
+
+        suspend fun waitAdvancedFuncAndWakeAdbd(context:Context, timeoutSeconds: Int = 60): Boolean{
+            val intervalMillis = 800L
+            val maxAttempts = timeoutSeconds * 1000 / intervalMillis
+
+            repeat(maxAttempts.toInt()) {
+                try {
+                    val socketPath = File(context.filesDir, "kano_root_shell.sock")
+                    val testResult =
+                        RootShell.sendCommandToSocket(
+                            "whoami",
+                            socketPath.absolutePath
+                        ) ?: "whoami执行失败"
+
+                    if (!socketPath.exists() || !testResult.contains("root")) {
+                        throw Exception("高级功能还没准备好")
+                    }
+
+                    KanoLog.d("UFI_TOOLS_LOG", "检测到高级功能已经打开，正在拉起adbd...")
+
+                    val result =
+                        RootShell.sendCommandToSocket(
+                            """setprop service.adb.tcp.port 5555
+                                          setprop ctl.restart adbd
+                                          """.trimIndent(),
+                            socketPath.absolutePath
+                        )
+
+                    KanoLog.d("UFI_TOOLS_LOG", "socat测试结果： $result")
+
+                    return result != null
+                } catch (e: Exception) {
+                    KanoLog.d("UFI_TOOLS_LOG", "高级功能等待异常: ${e.message}")
+                }
+                delay(intervalMillis)
+            }
+            return false
         }
     }
 }
