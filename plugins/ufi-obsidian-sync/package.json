@@ -1,0 +1,12 @@
+{
+  "name": "ufi-obsidian-sync-plugin",
+  "version": "2.3.1",
+  "description": "UFI-TOOLS plugin for running an always-on Obsidian sync node on resource-constrained Android/ARM64 devices",
+  "scripts": {
+    "test:ui": "node test/plugin.test.js",
+    "test": "bash build.sh && npm run test:ui"
+  },
+  "devDependencies": {
+    "jsdom": "27.4.0"
+  }
+}
