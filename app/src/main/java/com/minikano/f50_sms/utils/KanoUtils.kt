@@ -918,7 +918,7 @@ class KanoUtils {
                     putString(PREF_AUTO_IP_ENABLED, true.toString())
                 }
                 if (!existing.containsKey(PREF_WAKELOCK)) {
-                    putString(PREF_WAKELOCK, "lock")
+                    putString(PREF_WAKELOCK, "unlock")
                 }
                 if (!existing.containsKey(PREF_POWER_STATUS_FORWARD)) {
                     putString(PREF_POWER_STATUS_FORWARD, "1")

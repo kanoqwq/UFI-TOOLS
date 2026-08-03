@@ -1561,6 +1561,11 @@
                                 <button style="width: 100%;" onclick="event.preventDefault();toggleWakeLock(false)"
                                     data-i18n="wake_lock_disabled">禁用唤醒锁</button>
                             </div>
+                            <div style="display: flex;gap: 10px;margin: 10px 0;">
+                                <button style="width: 100%;" class="btn"
+                                    onclick="disableButtonWhenExecuteFunc(event,handleShell)"
+                                    data-i18n="advance_run_shell">一键执行shell脚本(非root)<br>(脚本需在/sdcard/one_click_shell.sh)</button>
+                            </div>
                             <p style="display: flex;flex-wrap: nowrap;align-items: center;gap: 4px;">
                                 <span data-i18n="ttyd_port">TTYD 端口
                                     (默认:1146)：</span><input name="ttyd_port" placeholder="1145" type="number"
@@ -1727,16 +1732,12 @@
                                             data-i18n="advance_disable_update">禁用更新</button>
                                         <button onclick="handleEditBootScriptModal()"
                                             data-i18n="edit_boot_script">编辑启动脚本</button>
-                                        <button class="btn" onclick="disableButtonWhenExecuteFunc(event,handleShell)"
-                                            data-i18n="advance_run_shell">一键执行shell脚本(非root)<br>(脚本需在/sdcard/one_click_shell.sh)</button>
-                                        <button class="btn"
-                                            onclick="disableButtonWhenExecuteFunc(event,()=>switchCpuCore(false))"
-                                            data-i18n="advance_disable_little_core">关闭小核</button>
-                                        <button class="btn"
-                                            onclick="disableButtonWhenExecuteFunc(event,()=>switchCpuCore(true))"
-                                            data-i18n="advance_enable_little_core">开启小核</button>
                                         <button class="btn" onclick="disableButtonWhenExecuteFunc(event,()=>getBoot())"
                                             data-i18n="advance_dump_boot">提取Boot</button>
+                                        <button onclick="event.preventDefault();toggleWakeLock(true)"
+                                            data-i18n="wake_lock_enabled">启用唤醒锁</button>
+                                        <button onclick="event.preventDefault();toggleWakeLock(false)"
+                                            data-i18n="wake_lock_disabled">禁用唤醒锁</button>
                                     </div>
                                 </div>
                             </div>
@@ -1758,7 +1759,8 @@
                     <div class="title" style="display: block;font-size: .7rem;margin-top: 10px;line-height: 20px;">
                         <span
                             data-i18n="change_pass_tip1">请务必使用UFI-TOOLS后台网页更改官方后台的密码，请不要直接在官方后台内更改密码，否则会导致后台记录密码与官方后台密码不一致，造成UFI-TOOLS部分功能（如定时任务）失效！</span><br />
-                        <span data-i18n="change_pass_tip2">当前UFI-TOOLS保存的密码为：</span>&nbsp;<span id="official_web_pwd"></span>
+                        <span data-i18n="change_pass_tip2">当前UFI-TOOLS保存的密码为：</span>&nbsp;<span
+                            id="official_web_pwd"></span>
                     </div>
                     <form onsubmit="handleChangePassword(event)" id="changePassForm">
                         <input type="text" autocomplete="username" name="username" value="admin" style="display: none;">
@@ -1767,7 +1769,8 @@
                                 <label style="display: flex; align-items: center;">
                                     <span style="flex: 1;" data-i18n="old_password">旧的密码：</span>
                                     <input style="flex: 1;padding: 4px 6px;width: 100%;" name="oldPassword"
-                                        type="password" value="02:00:00:00:00:00" placeholder="旧密码" autocomplete="current-password"
+                                        type="password" value="02:00:00:00:00:00" placeholder="旧密码"
+                                        autocomplete="current-password"
                                         data-i18n-placeholder="old_password_placeholder">
                                 </label>
                             </div>

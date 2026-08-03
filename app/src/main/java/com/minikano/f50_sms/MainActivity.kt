@@ -288,8 +288,8 @@ class MainActivity : ComponentActivity() {
                         mutableStateOf(
                             sharedPrefs.getString(
                                 PREF_WAKELOCK,
-                                "lock"
-                            ) ?: "lock"
+                                "unlock"
+                            ) ?: "unlock"
                         )
                     }
 
@@ -327,8 +327,8 @@ class MainActivity : ComponentActivity() {
 
                                 wakeLock  = sharedPrefs.getString(
                                     PREF_WAKELOCK,
-                                    "lock"
-                                ) ?: "lock"
+                                    "unlock"
+                                ) ?: "unlock"
 
                                 KanoLog.d("UFI_TOOLS_LOG", "user touched stop btn")
                             }
