@@ -55,6 +55,7 @@ class WebService : Service() {
         // Base PARTIAL_WAKE_LOCK 只由承载 Ktor 的核心服务持有。
         val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
         // WakeLock.exeBaseWakeLock(pm)
+        WakeLock.releaseBaseWakeLock()
 
         //检测IP变动，适应用户ip网段更改
         KanoUtils.adaptIPChange(applicationContext)

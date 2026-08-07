@@ -1,10 +1,14 @@
 package com.minikano.f50_sms.utils
 
-import android.content.Context
+import android.annotation.SuppressLint
 import android.util.Log
 import java.io.File
 import java.util.UUID
 import androidx.core.content.edit
+import android.provider.Settings
+import android.content.Context
+import com.minikano.f50_sms.utils.KanoUtils.Companion.sendShellCmd
+import java.security.MessageDigest
 
 object UniqueDeviceIDManager {
 
@@ -32,6 +36,39 @@ object UniqueDeviceIDManager {
         return cachedUUID
     }
 
+    @SuppressLint("HardwareIds")
+    fun getAndroidId(context: Context): String? {
+        return Settings.Secure.getString(
+            context.contentResolver,
+            Settings.Secure.ANDROID_ID
+        )
+    }
+
+    fun getSprdUID(): String? {
+        try {
+            val cmd = "cat /sys/class/misc/sprd_uid/uid"
+            val result = sendShellCmd(cmd)
+            if (!result.done) throw Exception(result.content)
+            val uid = result.content
+            if(uid.isEmpty()) {
+                return null
+            }
+            return uid
+        } catch (e: Exception) {
+            Log.e("UFI_TOOLS_LOG", "获取sprd_uid失败：", e)
+            return null
+        }
+    }
+
+    fun uuidTo16(uuid: String): String {
+        val bytes = MessageDigest.getInstance("SHA-256")
+            .digest(uuid.toByteArray())
+
+        return bytes.take(8).joinToString("") {
+            "%02x".format(it)
+        }
+    }
+
     private fun loadOrCreateUUID(context: Context): String? {
         return try {
             val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -39,7 +76,17 @@ object UniqueDeviceIDManager {
             if (!storedUUID.isNullOrEmpty()) {
                 return storedUUID
             }
-            val newUUID = UUID.randomUUID().toString()
+
+            var newUUID = getSprdUID()
+
+            if(newUUID == null){
+                newUUID = getAndroidId(context)
+            }
+
+            if(newUUID == null){
+                newUUID = uuidTo16(UUID.randomUUID().toString())
+            }
+
             prefs.edit(commit = true) { putString("device_uuid", newUUID) }
             newUUID
         } catch (e: Exception) {
