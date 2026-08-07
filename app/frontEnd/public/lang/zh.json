@@ -228,7 +228,7 @@
     "data_manage_plan_used": "已用流量：",
     "data_manage_plan_used_placeholder": "请输入已用流量",
     "modal_speedtest_title": "内网测速(参考)",
-    "speedtest_block_size_label": "块大小(1MB 最大 1024)：",
+    "speedtest_block_size_label": "块大小(8MB 最大 1024)：",
     "speedtest_ready": "准备就绪",
     "speedtest_start_btn": "开始测速",
     "speedtest_stop_btn": "停止测速",

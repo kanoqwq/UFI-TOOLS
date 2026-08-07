@@ -227,7 +227,7 @@
     "data_manage_plan_used": "Dữ liệu đã dùng：",
     "data_manage_plan_used_placeholder": "Nhập dữ liệu đã dùng",
     "modal_speedtest_title": "Kiểm tra tốc độ cục bộ (Không chính xác)",
-    "speedtest_block_size_label": "Kích thước khối (1MB, Tối đa 1024)：",
+    "speedtest_block_size_label": "Kích thước khối (8MB, Tối đa 1024)：",
     "speedtest_ready": "Sẵn sàng",
     "speedtest_stop_btn": "Dừng kiểm tra",
     "speedtest_running_btn": "Đang chạy...",

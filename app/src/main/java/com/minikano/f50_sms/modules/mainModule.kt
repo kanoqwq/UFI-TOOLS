@@ -12,11 +12,9 @@ import com.minikano.f50_sms.modules.ota.otaModule
 import com.minikano.f50_sms.modules.plugins.pluginsModule
 import com.minikano.f50_sms.modules.scheduledTask.scheduledTaskModule
 import com.minikano.f50_sms.modules.smsForward.smsModule
-import com.minikano.f50_sms.modules.speedtest.SpeedTestDispatchers
 import com.minikano.f50_sms.modules.speedtest.speedTestModule
 import com.minikano.f50_sms.modules.theme.themeModule
 import io.ktor.server.application.Application
-import io.ktor.server.application.ApplicationStopped
 import io.ktor.server.application.install
 import io.ktor.server.plugins.defaultheaders.DefaultHeaders
 import io.ktor.server.routing.routing
@@ -64,8 +62,4 @@ fun Application.mainModule(context: Context, proxyServerIp: String) {
 
     }
 
-    //应用结束时关闭dispather，避免内存泄漏
-    environment.monitor.subscribe(ApplicationStopped) {
-        SpeedTestDispatchers.close()
-    }
 }

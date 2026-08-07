@@ -3802,6 +3802,7 @@ function main_func() {
             createToast(t('toast_please_login'), 'red')
             return null
         }
+
         if (speedFlag) {
             speedController.abort();
             createToast(t('toast_speed_test_cancel'));
@@ -3819,60 +3820,166 @@ function main_func() {
 
         const ckSize = document.querySelector('#speedTestModal #ckSize').value;
         const chunkSize = !isNaN(Number(ckSize)) ? Number(ckSize) : 1000;
+
         const resultDiv = document.getElementById('speedtestResult');
 
         const url = `${serverUrl}?ckSize=${chunkSize}&cors`;
+
         resultDiv.textContent = t('speedtest_running_btn');
 
+
         let totalBytes = 0;
-        let startTime = performance.now();
-        let lastUpdateTime = startTime;
+
+        // 速度计算
         let lastBytes = 0;
+        let lastTime = 0;
 
-        try {
-            const res = await fetch(url, { signal: speedSignal, headers: { ...common_headers } });
-            const reader = res.body.getReader();
+        // 滑动窗口
+        const speedSamples = [];
+        const MAX_SAMPLES = 5;
 
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
+        let running = true;
+        let renderPending = false;
 
-                totalBytes += value.length;
-                const now = performance.now();
+        let currentSpeed = 0;
 
-                if (now - lastUpdateTime >= 80) {
-                    const elapsed = (now - lastUpdateTime) / 1000;
-                    const speed = ((totalBytes - lastBytes) * 8 / 1024 / 1024) / elapsed;
 
-                    resultDiv.innerHTML = `
+        function updateUI() {
+            if (!running || renderPending) return;
+
+            renderPending = true;
+
+            requestAnimationFrame(() => {
+                if (!running) {
+                    renderPending = false;
+                    return;
+                }
+
+                resultDiv.innerHTML = `
                 ${t('speedtest_testing')}<br/>
                 ${t('speedtest_total_download')}: ${(totalBytes / 1024 / 1024).toFixed(2)} MB<br/>
-                ${t('speedtest_current_speed')}: ${speed.toFixed(2)} Mbps
+                ${t('speedtest_current_speed')}: ${currentSpeed.toFixed(2)} Mbps
             `;
 
-                    lastUpdateTime = now;
+                renderPending = false;
+            });
+        }
+
+
+        try {
+
+            const res = await fetch(url, {
+                signal: speedSignal,
+                headers: {
+                    ...common_headers
+                }
+            });
+
+
+            const reader = res.body.getReader();
+
+
+            // 从真正开始收到数据计算
+            const startTime = performance.now();
+            lastTime = startTime;
+
+
+            while (true) {
+
+                const { done, value } = await reader.read();
+
+                if (done) break;
+
+
+                totalBytes += value.length;
+
+
+                const now = performance.now();
+
+                const elapsed = (now - lastTime) / 1000;
+
+
+                // 每50ms采样
+                if (elapsed >= 0.05) {
+
+
+                    const deltaBytes = totalBytes - lastBytes;
+
+
+                    const speed =
+                        (deltaBytes * 8 / 1024 / 1024) / elapsed;
+
+
+                    speedSamples.push(speed);
+
+
+                    if (speedSamples.length > MAX_SAMPLES) {
+                        speedSamples.shift();
+                    }
+
+
+                    currentSpeed =
+                        speedSamples.reduce(
+                            (a, b) => a + b,
+                            0
+                        ) / speedSamples.length;
+
+
+
                     lastBytes = totalBytes;
+                    lastTime = now;
+
+
+                    updateUI();
                 }
             }
 
-            const totalTime = (performance.now() - startTime) / 1000;
-            const avgSpeed = ((totalBytes * 8) / 1024 / 1024) / totalTime;
+
+            running = false;
+
+
+            const totalTime =
+                (performance.now() - startTime) / 1000;
+
+
+            const avgSpeed =
+                ((totalBytes * 8) / 1024 / 1024) /
+                totalTime;
+
 
             resultDiv.innerHTML += `
-        <br/>✅ ${t('speedtest_done')}<br/>
-        ${t('speedtest_total_time')}: ${totalTime.toFixed(2)} ${t('unit_seconds')}<br/>
-        ${t('speedtest_avg_speed')}: ${avgSpeed.toFixed(2)} Mbps
-    `;
+            <br/>✅ ${t('speedtest_done')}<br/>
+            ${t('speedtest_total_time')}: ${totalTime.toFixed(2)} ${t('unit_seconds')}<br/>
+            ${t('speedtest_avg_speed')}: ${avgSpeed.toFixed(2)} Mbps
+        `;
+
+
         } catch (err) {
+
+            running = false;
+
             if (err.name === 'AbortError') {
-                resultDiv.innerHTML += `<br/>⚠️ ${t('speedtest_aborted')}`;
+
+                resultDiv.innerHTML +=
+                    `<br/>⚠️ ${t('speedtest_aborted')}`;
+
             } else {
-                resultDiv.innerHTML = `❌ ${t('speedtest_failed')}: ${err.message}`;
+
+                resultDiv.innerHTML =
+                    `❌ ${t('speedtest_failed')}: ${err.message}`;
             }
+
         } finally {
+
+            running = false;
+
             speedFlag = false;
-            e.target.innerHTML = t('speedtest_start_btn');
+
+            e.target.innerHTML =
+                t('speedtest_start_btn');
+
             e.target.style.backgroundColor = '';
+
         }
     }
 

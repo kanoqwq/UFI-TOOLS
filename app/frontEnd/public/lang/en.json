@@ -227,7 +227,7 @@
     "data_manage_plan_used": "Used Data：",
     "data_manage_plan_used_placeholder": "Enter used data",
     "modal_speedtest_title": "Local Speed Test (Inaccurate)",
-    "speedtest_block_size_label": "Block Size (1MB, Max 1024)：",
+    "speedtest_block_size_label": "Block Size (8MB, Max 1024)：",
     "speedtest_ready": "Ready",
     "speedtest_stop_btn": "Stop Test",
     "speedtest_running_btn": "Running...",

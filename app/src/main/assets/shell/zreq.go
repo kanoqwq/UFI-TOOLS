@@ -16,7 +16,7 @@ import (
 
 var (
 	ip     = flag.String("ip", "192.168.0.1", "设备 IP 地址（可选），示例：192.168.0.1")
-	pwd    = flag.String("pwd", "", "登录密码（必填）")
+	pwd    = flag.String("pwd", "Wa@9w+YWRtaW4=", "登录密码（可选）")
 	method = flag.String("method", "GET", "请求方法：GET 或 POST（默认 GET）")
 	params = flag.String("params", "", "GET 请求参数，格式：cmd=LD&multi_data=1")
 	body   = flag.String("body", "", "POST 请求体，格式：goformId=LOGIN&isTest=false")

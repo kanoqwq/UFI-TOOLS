@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"encoding/xml"
 	"flag"
 	"fmt"
 	"io"
@@ -94,6 +95,40 @@ func printJSONError(msg string, err error) {
 	})
 }
 
+type SharedPrefs struct {
+	XMLName xml.Name `xml:"map"`
+	Items   []Item   `xml:"string"`
+}
+
+type Item struct {
+	Name  string `xml:"name,attr"`
+	Value string `xml:",chardata"`
+}
+
+func GetLoginTokenSHA256() (string, error) {
+	path := "/data/data/com.minikano.f50_sms/shared_prefs/kano_ZTE_store.xml"
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+
+	var prefs SharedPrefs
+
+	err = xml.Unmarshal(data, &prefs)
+	if err != nil {
+		return "", err
+	}
+
+	for _, item := range prefs.Items {
+		if item.Name == "login_token" {
+			return item.Value, nil
+		}
+	}
+
+	return "", nil
+}
+
 func main() {
 	var (
 		host     string
@@ -104,8 +139,11 @@ func main() {
 		timeout  int
 	)
 
+	//获取本机sha256密码
+	tokenSHA256, _ := GetLoginTokenSHA256()
+
 	flag.StringVar(&host, "host", "192.168.0.1:2333", `目标地址，比如 "192.168.0.1" 或 "192.168.0.1:2333" (选填)`)
-	flag.StringVar(&password, "pass", "", "密码明文，用于生成 Authorization=sha256(password) (必填)")
+	flag.StringVar(&password, "pass", "", "密码明文，用于生成 Authorization=sha256(password) (可以不填，不填自动获取本机的密码)")
 	flag.StringVar(&method, "X", "GET", "HTTP 方法：GET/POST/PUT/DELETE...")
 	flag.StringVar(&endpoint, "e", "", `请求路径或完整URL，如 "/api/xxx" (必填)`)
 	flag.StringVar(&data, "d", "", `请求体(JSON字符串)。GET 一般不需要。例：'{"command":"ls"}'`)
@@ -124,7 +162,7 @@ func main() {
 	}
 	flag.Parse()
 
-	if host == "" || password == "" || endpoint == "" {
+	if host == "" || (password == "" && tokenSHA256 == "") || endpoint == "" {
 		flag.Usage()
 		os.Exit(2)
 	}
@@ -143,9 +181,15 @@ func main() {
 		urlPath = "/"
 	}
 
+	auth := ""
+	if password != "" {
+		auth = sha256Hex([]byte(password))
+	} else {
+		auth = tokenSHA256
+	}
+
 	ts := fmt.Sprintf("%d", time.Now().UnixMilli())
 	sign := makeKanoSign(m, urlPath, ts)
-	auth := sha256Hex([]byte(password))
 
 	var body io.Reader
 	if data != "" {
