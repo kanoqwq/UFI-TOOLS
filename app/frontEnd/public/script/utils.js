@@ -1464,3 +1464,22 @@ function safeClone(obj) {
     }
     return JSON.parse(JSON.stringify(obj))
 }
+
+function setBtnLoading(ele, isLoading = false) {
+    if (!ele) return
+    if (isLoading) {
+        ele.querySelector(".kano_btn_is_loading") && ele.removeChild(ele.querySelector(".kano_btn_is_loading"))
+        const span = document.createElement('span')
+        span.className = "kano_btn_is_loading"
+        span.style.display = 'inline-block'
+        span.innerText = "🍥"
+        span.classList.add("spin")
+        ele.appendChild(span)
+        ele.disabled = true
+        ele.style.backgroundColor = "var(--dark-btn-disabled)"
+    } else {
+        ele.querySelector(".kano_btn_is_loading") && ele.removeChild(ele.querySelector(".kano_btn_is_loading"))
+        ele.disabled = false
+        ele.style.backgroundColor = ""
+    }
+}

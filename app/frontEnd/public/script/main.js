@@ -1672,8 +1672,8 @@ function main_func() {
     initBandForm()
 
     //网络协议栈开关
-    const networkStackSwitch = async (flag) => {
-        await executeATCommand(flag ? "AT+SFUN=4" : "AT+SFUN=5")
+    const networkStackSwitch = async (flag, slot = 0) => {
+        await executeATCommand(flag ? "AT+SFUN=4" : "AT+SFUN=5", slot)
     }
 
     const submitBandForm = async (e) => {
@@ -1682,6 +1682,16 @@ function main_func() {
             out()
             return null
         }
+        let lockBandBtn = document.querySelector("#lockBandBtn")
+        let unlockBandBtn = document.querySelector("#unlockBandBtn")
+        if (!lockBandBtn && !unlockBandBtn) {
+            console.log("找不到unlockBandBtn、lockBandBtn")
+            return
+        }
+
+        setBtnLoading(lockBandBtn, true)
+        setBtnLoading(unlockBandBtn, true)
+
         const form = e.target
         const bands = form.querySelectorAll('input[type="checkbox"]:checked')
         const lte_bands = []
@@ -1701,6 +1711,8 @@ function main_func() {
         if (!cookie) {
             createToast(t('toast_login_failed_check_network'), 'red')
             out()
+            setBtnLoading(lockBandBtn, false)
+            setBtnLoading(unlockBandBtn, false)
             return null
         }
         try {
@@ -1717,9 +1729,13 @@ function main_func() {
             if (res[0].result == 'success' || res[1].result == 'success') {
                 createToast(t('toast_set_band_success'), 'green')
                 //重启网络栈
-                await networkStackSwitch(false)
-                await wait(300)
-                await networkStackSwitch(true)
+                await networkStackSwitch(false, 0)
+                await wait(100)
+                await networkStackSwitch(false, 1)
+                await wait(100)
+                await networkStackSwitch(true, 0)
+                await wait(100)
+                await networkStackSwitch(true, 1)
                 // const netType = document.querySelector('#NET_TYPE')
                 // if (netType) {
                 //     const options = document.querySelectorAll('#NET_TYPE option')
@@ -1745,6 +1761,8 @@ function main_func() {
             createToast(t('toast_set_band_failed'), 'red')
         } finally {
             await initBandForm()
+            setBtnLoading(lockBandBtn, false)
+            setBtnLoading(unlockBandBtn, false)
         }
     }
 
@@ -3148,8 +3166,8 @@ function main_func() {
 
 
     const executeATCommand = async (command, slot = null) => {
-        let at_slot_value = document.querySelector("#AT_SLOT")?.value
         if (slot == null || slot == undefined) {
+            let at_slot_value = document.querySelector("#AT_SLOT")?.value
             if (isNaN(Number(at_slot_value?.trim())) || at_slot_value == undefined || at_slot_value == null) {
                 slot = 0
             } else {
@@ -3167,22 +3185,32 @@ function main_func() {
 
     async function QOSRDPCommand(cmd) {
         if (!cmd) return QORS_MESSAGE = null
+        let sim_slot = null
         // 获取当前卡槽
-        let { sim_slot } = await getData(new URLSearchParams({
-            cmd: 'sim_slot'
-        }))
+        if (UFI_DATA && UFI_DATA.sim_slot != undefined && UFI_DATA.sim_slot != null && UFI_DATA.sim_slot != '') {
+            sim_slot = UFI_DATA.sim_slot
+        }
+        else {
+            let { sim_slot: s } = await getData(new URLSearchParams({
+                cmd: 'sim_slot'
+            }))
+            sim_slot = s
+        }
+
         //获取是否支持双sim卡
-        const { dual_sim_support } = await getData(new URLSearchParams({
-            cmd: 'dual_sim_support'
-        }))
+        let dual_sim_support = null
+        if (UFI_DATA && UFI_DATA.dual_sim_support != undefined && UFI_DATA.dual_sim_support != null && UFI_DATA.dual_sim_support != '') {
+            dual_sim_support = UFI_DATA.dual_sim_support
+        } else {
+            const { dual_sim_support: d } = await getData(new URLSearchParams({
+                cmd: 'dual_sim_support'
+            }))
+            dual_sim_support = d
+        }
+
         if (!sim_slot || dual_sim_support != '1') {
             //单卡用户默认0槽位
             sim_slot = 0
-        }
-
-        // For F50Pro
-        if (UFI_DATA && UFI_DATA.model == "MU3356" && (sim_slot == '0' || sim_slot == '1')) {
-            sim_slot = sim_slot == 1 ? 0 : 1
         }
 
         // V50 内置卡1(移动)slot=0 内置卡2(电信)slot=1 内置卡3(联通)slot=2 外置卡slot=11 外置卡 slot需要设置为0 联通内置卡slot设置为1
