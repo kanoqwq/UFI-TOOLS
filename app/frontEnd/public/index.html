@@ -100,12 +100,6 @@
                                 onclick="createToast(t('please_login'),'red')">高级功能</button>
                             <button id="CECULLAR" class="btn" data-i18n="cellular"
                                 onclick="createToast(t('please_login'),'red')">数据流量</button>
-                            <button id="ADB" class="btn" data-i18n="adb"
-                                onclick="createToast(t('please_login'),'red')">USB调试</button>
-                            <button id="ADB_NET" class="btn" data-i18n="adb_autostart"
-                                onclick="createToast(t('please_login'),'red')">ADB自启</button>
-                            <button id="PERF" class="btn" data-i18n="performance_mode"
-                                onclick="createToast(t('please_login'),'red')">性能模式</button>
                             <button id="LIGHT" class="btn" data-i18n="indicator"
                                 onclick="createToast(t('please_login'),'red')">指示灯</button>
                             <button id="NFC" style="display: none;" class="btn" data-i18n="nfc"
@@ -1738,6 +1732,12 @@
                                             data-i18n="wake_lock_enabled">启用唤醒锁</button>
                                         <button onclick="event.preventDefault();toggleWakeLock(false)"
                                             data-i18n="wake_lock_disabled">禁用唤醒锁</button>
+                                        <button id="ADB" class="btn" data-i18n="usb_debugging"
+                                            onclick="createToast(t('please_login'),'red')">USB调试</button>
+                                        <button id="ADB_NET" class="btn" data-i18n="adb_autostart"
+                                            onclick="createToast(t('please_login'),'red')">ADB自启</button>
+                                        <button id="PERF" class="btn" data-i18n="performance_mode"
+                                            onclick="createToast(t('please_login'),'red')">性能模式</button>
                                     </div>
                                 </div>
                             </div>

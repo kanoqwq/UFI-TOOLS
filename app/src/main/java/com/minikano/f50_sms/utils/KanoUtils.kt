@@ -829,6 +829,18 @@ class KanoUtils {
             return rules.any { rule -> rule(t) }
         }
 
+        fun isADBAutoBootUpEnabled(context: Context): Boolean {
+            return try {
+                val sharedPrefs =
+                    context.getSharedPreferences(ShellKano.Companion.PREFS_NAME, Context.MODE_PRIVATE)
+                    val ADB_IP_ENABLED = sharedPrefs.getString("ADB_IP_ENABLED", "")
+                    return  ADB_IP_ENABLED == "true"
+            } catch (e: Exception) {
+                //默认是Enabled
+                true
+            }
+        }
+
         fun isUsbDebuggingEnabled(context: Context): Boolean {
             return try {
                 Settings.Global.getInt(context.contentResolver, Settings.Global.ADB_ENABLED, 0) == 1

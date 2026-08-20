@@ -418,6 +418,7 @@
     "network_adb_status": "Trạng thái ADB mạng",
     "adb_status_active": "Đã kích hoạt",
     "adb_status_waiting": "Đang chờ",
+    "usb_debugging": "Gỡ lỗi USB",
     "usb_debugging_status": "Công tắc gỡ lỗi USB",
     "usb_debugging_active": "Đã kích hoạt",
     "usb_debugging_inactive": "Đã tắt",

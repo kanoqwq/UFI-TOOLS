@@ -641,7 +641,7 @@ class ShellKano {
                     val sharedPrefs =
                         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-                    val ADB_IP_ENABLED = sharedPrefs.getString("ADB_IP_ENABLED", "") ?: null
+                    val ADB_IP_ENABLED = sharedPrefs.getString("ADB_IP_ENABLED", "")
 
                     Log.d("UFI_TOOLS_LOG", "ADB_IP_ENABLED:${ADB_IP_ENABLED}")
 
@@ -707,21 +707,6 @@ class ShellKano {
                                 val req = KanoGoformRequest("http://$ADB_IP:8080")
                                 val cookie = req.login(ADMIN_PWD)
                                 if (cookie != null) {
-                                    val result1 = req.postData(
-                                        cookie, mapOf(
-                                            "goformId" to "USB_PORT_SETTING",
-                                            "usb_port_switch" to "0"
-                                        )
-                                    )
-                                    KanoLog.d("UFI_TOOLS_LOG", "关闭ADBD结果: $result1")
-                                    delay(500)
-                                    val result2 = req.postData(
-                                        cookie, mapOf(
-                                            "goformId" to "USB_PORT_SETTING",
-                                            "usb_port_switch" to "1"
-                                        )
-                                    )
-                                    KanoLog.d("UFI_TOOLS_LOG", "开启ADBD结果: $result2")
 
                                     val result3 = req.postData(
                                         cookie, mapOf(
@@ -747,9 +732,9 @@ class ShellKano {
                                     }
 
                                     req.logout(cookie)
-                                    if (result1?.getString("result") == "success" && result2?.getString("result") == "success") {
-                                        KanoLog.d("UFI_TOOLS_LOG", "ADB_WIFI自启动执行成功")
-                                    }
+//                                    if (result1?.getString("result") == "success" && result2?.getString("result") == "success") {
+//                                        KanoLog.d("UFI_TOOLS_LOG", "ADB_WIFI自启动执行成功")
+//                                    }
                                 }
                             }
 

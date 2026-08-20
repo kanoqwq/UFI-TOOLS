@@ -418,6 +418,7 @@
     "network_adb_status": "Network ADB Status",
     "adb_status_active": "Activated",
     "adb_status_waiting": "Waiting",
+    "usb_debugging": "USB Debugging",
     "usb_debugging_status": "USB Debugging Switch",
     "usb_debugging_active": "Activated",
     "usb_debugging_inactive": "Deactivated",

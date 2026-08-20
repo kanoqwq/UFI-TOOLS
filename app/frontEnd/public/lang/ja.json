@@ -27,6 +27,7 @@
     "changing": "変更中",
     "adb": "USBデバッグ",
     "adb_autostart": "ADB自動起動",
+    "usb_debugging": "USBデバッグ",
     "performance_mode": "性能モード",
     "indicator": "インジケーター",
     "nfc": "NFC",

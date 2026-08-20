@@ -1161,18 +1161,15 @@ function main_func() {
                 if (!(await initRequestData())) {
                     return null
                 }
+                if (!(await checkAdvancedFunc())) {
+                    createToast(t('need_advance_func'), 'red')
+                    return null
+                }
                 const cookie = await login()
                 if (!cookie) {
                     createToast(t('toast_login_failed_check_network'), 'red')
                     out()
                     return null
-                }
-                // usb调试需要同步开启
-                if (!(res.enabled == "true" || res.enabled == true)) {
-                    await (await postData(cookie, {
-                        goformId: 'USB_PORT_SETTING',
-                        usb_port_switch: '1'
-                    })).json()
                 }
                 let res1 = await (await fetchWithTimeout(`${KANO_baseURL}/adb_wifi_setting`, {
                     method: 'POST',
@@ -4427,7 +4424,7 @@ function main_func() {
             if (adbStatusEl && adbStatusEl.length > 0) {
                 adbStatusEl.forEach((item) => {
                     try {
-                        item.innerHTML = adb_text + `<br/>${t('usb_debugging_status')}：${adbSwitch ? `🟢 ${t('usb_debugging_active')}` : `🔴 ${t('usb_debugging_inactive')}`}` + `<br/>${t('firmware_version')}：${version}`
+                        item.innerHTML = adb_text + `<br/>${t('usb_debugging_status')}：${adbSwitch ? `${t('usb_debugging_active')}` : `${t('usb_debugging_inactive')}`}` + `<br/>${t('firmware_version')}：${version}`
                     } catch { }
                 })
             }
