@@ -742,10 +742,8 @@ function getBrowserVersion() {
     };
 }
 
-const bandTableTrList = document.querySelectorAll('#bandTable tr')
-const selectAllBandChkBox = document.querySelector('#selectAllBand')
-
 const toggleAllBandBox = (checked = false) => {
+    const bandTableTrList = document.querySelectorAll('#bandTable tr')
     if (bandTableTrList) {
         bandTableTrList.forEach(el => {
             const input = el.querySelector('input')
@@ -757,6 +755,8 @@ const toggleAllBandBox = (checked = false) => {
 }
 
 const checkBandSelect = () => {
+    const bandTableTrList = document.querySelectorAll('#bandTable tr')
+    const selectAllBandChkBox = document.querySelector('#selectAllBand')
     if (bandTableTrList && bandTableTrList.length) {
         let flagCount = 0
         bandTableTrList.forEach(el => {
@@ -775,7 +775,8 @@ const checkBandSelect = () => {
     }
 }
 
-if (bandTableTrList && bandTableTrList.length) {
+const initBandsTrClick = () => {
+    const bandTableTrList = document.querySelectorAll('#bandTable tr')
     bandTableTrList.forEach(el => {
         const input = el.querySelector('input')
         if (input) {
@@ -790,6 +791,9 @@ if (bandTableTrList && bandTableTrList.length) {
     })
 }
 
+initBandsTrClick()
+
+const selectAllBandChkBox = document.querySelector('#selectAllBand')
 if (selectAllBandChkBox) {
     selectAllBandChkBox.onclick = (e) => {
         const checked = e.target.checked
@@ -1482,4 +1486,83 @@ function setBtnLoading(ele, isLoading = false) {
         ele.disabled = false
         ele.style.backgroundColor = ""
     }
+}
+
+const NR5G_BANDS = [
+    { band: 1, mode: 'FDD', range: '1920–1980 / 2110–2170', operator: '联通/电信' },
+    { band: 2, mode: 'FDD', range: '1850–1910 / 1930–1990', operator: '海外' },
+    { band: 3, mode: 'FDD', range: '1710–1785 / 1805–1880', operator: '海外/国内重耕可能' },
+    { band: 5, mode: 'FDD', range: '824–849 / 869–894', operator: '海外' },
+    { band: 7, mode: 'FDD', range: '2500–2570 / 2620–2690', operator: '海外' },
+    { band: 8, mode: 'FDD', range: '880–915 / 925–960', operator: '联通/电信/移动重耕可能' },
+    { band: 12, mode: 'FDD', range: '699–716 / 729–746', operator: '海外' },
+    { band: 13, mode: 'FDD', range: '777–787 / 746–756', operator: '海外' },
+    { band: 14, mode: 'FDD', range: '788–798 / 758–768', operator: '海外' },
+    { band: 16, mode: 'FDD', range: '2595–2640 / 2500–2545', operator: '海外/较少使用' },
+    { band: 18, mode: 'FDD', range: '815–830 / 860–875', operator: '海外' },
+    { band: 20, mode: 'FDD', range: '832–862 / 791–821', operator: '海外' },
+    { band: 24, mode: 'FDD', range: '1626.5–1660.5 / 1525–1559', operator: '海外/卫星' },
+    { band: 25, mode: 'FDD', range: '1850–1915 / 1930–1995', operator: '海外' },
+    { band: 26, mode: 'FDD', range: '814–849 / 859–894', operator: '海外' },
+    { band: 28, mode: 'FDD', range: '703–748 / 758–803', operator: '移动/广电' },
+    { band: 29, mode: 'SDL', range: '717–728', operator: '海外' },
+    { band: 30, mode: 'FDD', range: '2305–2315 / 2350–2360', operator: '海外' },
+    { band: 31, mode: 'FDD', range: '452.5–457.5 / 462.5–467.5', operator: '海外/专网' },
+    { band: 34, mode: 'TDD', range: '2010–2025', operator: '国内专网/历史频段' },
+    { band: 38, mode: 'TDD', range: '2570–2620', operator: '海外' },
+    { band: 39, mode: 'TDD', range: '1880–1920', operator: '国内专网/历史频段' },
+    { band: 40, mode: 'TDD', range: '2300–2400', operator: '海外/国内专网可能' },
+    { band: 41, mode: 'TDD', range: '2496–2690', operator: '移动/广电' },
+    { band: 46, mode: 'TDD', range: '5150–5925', operator: '海外/免许可' },
+    { band: 47, mode: 'TDD', range: '5855–5925', operator: '车联网/海外' },
+    { band: 48, mode: 'TDD', range: '3550–3700', operator: '海外/CBRS' },
+    { band: 50, mode: 'TDD', range: '1432–1517', operator: '海外' },
+    { band: 51, mode: 'TDD', range: '1427–1432', operator: '海外' },
+    { band: 53, mode: 'TDD', range: '2483.5–2495', operator: '海外/专网' },
+    { band: 54, mode: 'TDD', range: '1670–1675', operator: '海外' },
+    { band: 65, mode: 'FDD', range: '1920–2010 / 2110–2200', operator: '海外' },
+    { band: 66, mode: 'FDD', range: '1710–1780 / 2110–2200', operator: '海外' },
+    { band: 67, mode: 'SDL', range: '738–758', operator: '海外' },
+    { band: 70, mode: 'FDD', range: '1695–1710 / 1995–2020', operator: '海外' },
+    { band: 71, mode: 'FDD', range: '663–698 / 617–652', operator: '海外' },
+    { band: 72, mode: 'FDD', range: '451–456 / 461–466', operator: '海外/专网' },
+    { band: 74, mode: 'FDD', range: '1427–1470 / 1475–1518', operator: '海外' },
+    { band: 75, mode: 'SDL', range: '1432–1517', operator: '海外' },
+    { band: 76, mode: 'SDL', range: '1427–1432', operator: '海外' },
+    { band: 77, mode: 'TDD', range: '3300–4200', operator: '联通/电信/海外' },
+    { band: 78, mode: 'TDD', range: '3300–3800', operator: '联通/电信/广电' },
+    { band: 79, mode: 'TDD', range: '4400–5000', operator: '移动' },
+    { band: 80, mode: 'SUL', range: '1710–1785', operator: '海外' },
+    { band: 81, mode: 'SUL', range: '880–915', operator: '海外' },
+    { band: 82, mode: 'SUL', range: '832–862', operator: '海外' },
+    { band: 83, mode: 'SUL', range: '703–748', operator: '海外' },
+    { band: 84, mode: 'SUL', range: '1920–1980', operator: '海外' },
+    { band: 85, mode: 'FDD', range: '698–716 / 728–746', operator: '海外' },
+    { band: 86, mode: 'SUL', range: '1710–1780', operator: '海外' },
+    { band: 89, mode: 'SUL', range: '824–849', operator: '海外' },
+    { band: 90, mode: 'TDD', range: '2496–2690', operator: '移动/广电' },
+    { band: 91, mode: 'FDD', range: '832–862 / 1427–1432', operator: '海外' },
+    { band: 92, mode: 'FDD', range: '832–862 / 1432–1517', operator: '海外' },
+    { band: 93, mode: 'FDD', range: '880–915 / 1427–1432', operator: '海外' },
+    { band: 94, mode: 'FDD', range: '880–915 / 1432–1517', operator: '海外' },
+    { band: 96, mode: 'TDD', range: '5925–6425', operator: '海外' },
+    { band: 100, mode: 'FDD', range: '874.4–880 / 919.4–925', operator: '铁路/专网' },
+    { band: 101, mode: 'TDD', range: '1900–1910', operator: '铁路/专网' },
+    { band: 102, mode: 'TDD', range: '5925–6425', operator: '海外' },
+    { band: 104, mode: 'TDD', range: '6425–7125', operator: '海外/6GHz' },
+    { band: 257, mode: 'TDD', range: '26500–29500', operator: '毫米波/海外' },
+    { band: 258, mode: 'TDD', range: '24250–27500', operator: '毫米波/海外' },
+    { band: 259, mode: 'TDD', range: '39500–43500', operator: '毫米波/海外' },
+    { band: 260, mode: 'TDD', range: '37000–40000', operator: '毫米波/海外' },
+    { band: 261, mode: 'TDD', range: '27500–28350', operator: '毫米波/海外' },
+    { band: 262, mode: 'TDD', range: '47200–48200', operator: '毫米波/海外' },
+    { band: 263, mode: 'TDD', range: '57000–71000', operator: '毫米波/海外' }
+].map(item => ({ ...item, i18nKey: `5g.band.n${item.band}` }))
+
+function get5GBandInfo(band) {
+    const key = String(band).replace(/^n/i, '')
+    const item = NR5G_BANDS.find(item => String(item.band) === key)
+    return item
+        ? { ...item, band: `N${key}` }
+        : { band: `N${key}`, mode: '', range: '', operator: '', i18nKey: `5g.band.n${key}` }
 }

@@ -1633,6 +1633,34 @@ function main_func() {
     }
     initLightStatus()
 
+    const DEFAULT_NR_5G_BANDS = [1, 5, 8, 28, 41, 78]
+
+    const renderBandList = (bands, el) => {
+        if (!el) return
+
+        el.querySelectorAll('tr[data-band-type="5G"]').forEach(row => row.remove())
+        const supportBands = [...new Set((Array.isArray(bands) ? bands : [])
+            .map(band => Number(String(band).replace(/^n/i, '')))
+            .filter(Number.isInteger)
+            .filter(band => band > 0))]
+            .sort((a, b) => a - b)
+
+        supportBands.forEach(band => {
+            const bandInfo = get5GBandInfo(band)
+            const bandEl = document.createElement('tr')
+            bandEl.dataset.bandType = '5G'
+            bandEl.innerHTML = `
+                <td><input type="checkbox" data-type="5G" data-band="${band}"></td>
+                <td>${bandInfo.band}</td>
+                <td>${bandInfo.range}</td>
+                <td>${bandInfo.mode}</td>
+                <td data-i18n="${bandInfo.i18nKey}">${t(bandInfo.i18nKey, bandInfo.operator)}</td>
+            `
+            el.appendChild(bandEl)
+        })
+        initBandsTrClick()
+    }
+
     const initBandForm = async () => {
         const el = document.querySelector('#bandsForm')
         if (!(await initRequestData()) || !el) {
@@ -1643,6 +1671,32 @@ function main_func() {
         }))
 
         if (!res) return null
+
+        const bandListEl = document.querySelector('#bandTable')
+        if (bandListEl) {
+            try {
+                const atSlot = document.querySelector('#AT_SLOT')?.value?.trim()
+                const slot = /^\d+$/.test(atSlot) ? atSlot : '0'
+                const response = await fetchWithTimeout(
+                    `${KANO_baseURL}/getSupportNrBandList?slot=${slot}`,
+                    { headers: common_headers }
+                )
+                if (!response.ok) throw new Error(`HTTP ${response.status}`)
+
+                const { band_list: supportBands } = await response.json()
+                if (!Array.isArray(supportBands) || supportBands.length === 0) {
+                    throw new Error('AT 未返回支持的 5G 频段')
+                }
+                renderBandList(supportBands, bandListEl)
+            } catch (error) {
+                console.warn('获取支持的 5G 频段列表失败：', error)
+                renderBandList(DEFAULT_NR_5G_BANDS, bandListEl)
+            }
+        }
+
+        document.querySelectorAll('#bandsForm input[type="checkbox"]').forEach(checkbox => {
+            checkbox.checked = false
+        })
 
         if (res['lte_band_lock']) {
             const bands = res['lte_band_lock'].split(',')
