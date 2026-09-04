@@ -5767,8 +5767,8 @@ echo ${flag ? '1' : '0'} > /sys/devices/system/cpu/cpu3/online
 
             if (!file) return;
 
-            if (file.size > 1145 * 1024) {
-                const msg = `${t('toast_file_size_not_over_than')}${1145}KB！`
+            if (file.size > 10240 * 1024) {
+                const msg = `${t('toast_file_size_not_over_than')}${10240}KB！`
                 createToast(msg, 'red')
                 reject({ msg, data: null })
                 return

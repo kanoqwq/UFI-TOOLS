@@ -14,6 +14,15 @@ import io.ktor.server.routing.get
 import org.json.JSONArray
 import org.json.JSONObject
 
+private object NrBandListCache {
+    private val lock = Any()
+    private var bands: List<Int>? = null
+
+    fun getOrQuery(query: () -> List<Int>): List<Int> = synchronized(lock) {
+        bands ?: query().also { bands = it }
+    }
+}
+
 fun Route.atModule(context: Context) {
     val TAG = "[$BASE_TAG]_atModule"
 
@@ -74,22 +83,24 @@ fun Route.atModule(context: Context) {
     get("/api/getSupportNrBandList") {
         try {
             val slot = call.request.queryParameters["slot"]?.toIntOrNull() ?: 0
-            val raw = KanoUtils.runAT(context, "AT+SP5GCMDS=\"get nr support_band\"", slot)
-            if (raw.contains("ERROR", ignoreCase = true) || !raw.contains("+SP5GCMDS:", ignoreCase = true)) {
-                throw IllegalStateException("查询 NR 支持频段失败：$raw")
+            val bands = NrBandListCache.getOrQuery {
+                val raw = KanoUtils.runAT(context, "AT+SP5GCMDS=\"get nr support_band\"", slot)
+                if (raw.contains("ERROR", ignoreCase = true) || !raw.contains("+SP5GCMDS:", ignoreCase = true)) {
+                    throw IllegalStateException("查询 NR 支持频段失败：$raw")
+                }
+                raw
+                    .substringBefore("OK")
+                    .substringAfter(":", "")
+                    .split(",")
+                    .drop(1) // 第一个字段是命令名：get nr support_band
+                    .mapNotNull { it.trim().trim('"', '\\').toIntOrNull() }
+                    .distinct()
             }
-            val bands = raw
-                .substringBefore("OK")
-                .substringAfter(":", "")
-                .split(",")
-                .drop(1) // 第一个字段是命令名：get nr support_band
-                .mapNotNull { it.trim().trim('"', '\\').toIntOrNull() }
-                .distinct()
             val bandsJson = JSONArray().apply {
                 bands.forEach(::put)
             }
 
-            KanoLog.d(TAG, "getSupportNrBandList slot=$slot bands=$bands raw=$raw")
+            KanoLog.d(TAG, "getSupportNrBandList slot=$slot bands=$bands")
             call.respondText(
                 JSONObject()
                     .put("slot", slot)
