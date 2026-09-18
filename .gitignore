@@ -9,6 +9,7 @@
 /.idea/assetWizardSettings.xml
 .DS_Store
 /build
+/scripts/macos-u30pro/build/
 /captures
 .externalNativeBuild
 .cxx

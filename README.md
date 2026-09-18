@@ -6,7 +6,8 @@
 
 **[UFI-TOOLS使用说明](https://github.com/kanoqwq/UFI-TOOLS/blob/http-server-version/User_Doc.md)**
 
-F50 / U30Air 通用安装教程：[📺 B站视频](https://www.bilibili.com/video/BV1qUHpzeEDd)  
+F50 / U30Air 通用安装教程：[📺 B站视频](https://www.bilibili.com/video/BV1qUHpzeEDd)<br>
+U30 Pro（MU5358，实验性；出厂无 ADB）macOS Root + 安装完整版：[docs/U30-Pro-macOS.md](docs/U30-Pro-macOS.md)（agent：[docs/AGENT-U30-Pro-macOS.md](docs/AGENT-U30-Pro-macOS.md)）
 Magisk 模块版本（畅行60 / 云电脑）安装教程：[📺 B站视频](https://www.bilibili.com/video/BV1nsW4zpE1T)
 
 ---
@@ -46,7 +47,7 @@ UFI-TOOLS 提供 **Pocket Edition（PE版）** 与 **完整版本** 两种使用
 **UFI-TOOLS** 是为 **zxe（某兴）+ 展锐 / 紫光平台设备** 打造的全能系统管理与扩展框架。  
 支持在 **便携路由器、手机、平板** 等多种设备上运行，可通过 **Web UI / APK / Magisk 模块** 等方式部署。
 
-- ✅ 适配设备：zxe F50、U30 Air、畅行60、远航60系列、某兴云电脑平板等  
+- ✅ 适配设备：zxe F50、U30 Air、**U30 Pro（MU5358，实验性；需先 Root / 无线 ADB）**、畅行60、远航60系列、某兴云电脑平板等
 - 🧩 模块化插件系统  
 - 🌐 支持远程网页控制与设备集群管理  
 - ⚙️ 可作为后台服务运行，支持开机自启  
