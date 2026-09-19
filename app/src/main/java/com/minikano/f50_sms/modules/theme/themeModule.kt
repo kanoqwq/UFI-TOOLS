@@ -51,6 +51,9 @@ val jsonFull = Json {
     ignoreUnknownKeys = true
 }
 
+/** /api/upload_img 允许的扩展名 */
+private val ALLOWED_IMAGE_EXTS = setOf("jpg", "jpeg", "png", "webp", "gif", "bmp", "avif")
+
 fun Route.themeModule(context: Context) {
     val TAG = "[$BASE_TAG]_themeModule"
     val uploadRoot = File(context.filesDir, "uploads")
@@ -120,7 +123,13 @@ fun Route.themeModule(context: Context) {
                     when (part) {
                         is PartData.FileItem -> {
                             val originalFileName = part.originalFileName ?: "file"
-                            val ext = originalFileName.substringAfterLast('.', "unknown").lowercase()
+                            val ext = originalFileName.substringAfterLast('.', "").lowercase()
+                            // 只收图片。uploads 目录是免鉴权可读的，
+                            // 放任意扩展名等于允许在同源下托管 .html/.js，
+                            // 那会变成一个现成的 XSS 落点。
+                            if (ext !in ALLOWED_IMAGE_EXTS) {
+                                throw Exception("不支持的文件类型：.$ext（仅允许 ${ALLOWED_IMAGE_EXTS.joinToString("/")}）")
+                            }
                             fileName = "${UUID.randomUUID()}.$ext"
 
                             val uploadDir = File(context.filesDir, "uploads")
