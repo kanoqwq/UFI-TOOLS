@@ -10,7 +10,6 @@ retry_count=0
 
 PASS_FILE="/data/data/com.minikano.f50_sms/shared_prefs/kano_ZTE_store.xml"
 SHA256_BIN="/data/data/com.minikano.f50_sms/files/sha256"
-BACKUP_PASS="Wa@9w+YWRtaW4="
 
 # Extract login_token from XML
 get_login_pass() {
@@ -45,8 +44,11 @@ while true; do
     if [ -n "$hashed_pass" ]; then
         PASS="$hashed_pass"
     else
-        PASS="$("$SHA256_BIN" "$BACKUP_PASS")"
-        echo "Warning: Password file missing or empty, using backup password." 1>&2
+        # 以前这里会退回到一个写死的备用口令。那个常量在公开仓库里，
+        # 等于给任何人留了一把 root shell 的钥匙。现在直接拒绝登录：
+        # 读不到口令就不该放行。
+        echo "Error: login token unavailable. Open UFI-TOOLS and set a password first." 1>&2
+        exit 1
     fi
 
     input_raw_pass="$(read_password "Password: ")"

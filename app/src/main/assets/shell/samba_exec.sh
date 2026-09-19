@@ -337,6 +337,10 @@ boot_up_script() {
   fi
 
   #Drop port for ipv6
+  # 2333 是 UFI-TOOLS 自己的 Web 控制台。运营商给设备分配公网 IPv6 时，
+  # 漏掉它等于把带 root 能力的后台直接挂到公网上。
+  ip6tables -A INPUT -p tcp --dport 2333 -j DROP
+  ip6tables -A INPUT -p udp --dport 2333 -j DROP
   ip6tables -A INPUT -p tcp --dport 8080 -j DROP
   ip6tables -A INPUT -p tcp --dport 1146 -j DROP
   ip6tables -A INPUT -p tcp --dport 139 -j DROP
