@@ -1577,3 +1577,12 @@ function escapeHtml(input) {
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
 }
+// 内联事件处理器里的 JS 字符串字面量。
+// escapeHtml 只能防属性逃逸：HTML 解析器会把 &#39; 还原成 '，
+// 之后 JS 才解析，所以单引号仍能闭合字符串。先 JSON.stringify 生成
+// 合法的 JS 字面量，再交给 escapeHtml 处理属性层。
+// 用法（必须是双引号属性、且不要再自己加引号）：
+//   `<a onclick="f(${jsStringAttr(name)})">`
+function jsStringAttr(input) {
+    return escapeHtml(JSON.stringify(input == null ? '' : String(input)));
+}
