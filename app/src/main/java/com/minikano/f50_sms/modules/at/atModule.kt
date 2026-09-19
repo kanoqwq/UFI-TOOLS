@@ -43,12 +43,14 @@ fun Route.atModule(context: Context) {
                 ?: throw Exception("复制 sendat 到 filesDir 失败")
             outFileAt.setExecutable(true)
 
-            val atCommand = "${outFileAt.absolutePath} -n $slot -c '${command.trim()}'"
-            val result = ShellKano.runShellCommand(atCommand, true)
+            // 以 argv 传参，不经过 sh -c：命令里的引号/分号无法逃逸成 shell 命令
+            val atArgv = listOf(outFileAt.absolutePath, "-n", slot.toString(), "-c", command.trim())
+            val result = ShellKano.runShellArgv(atArgv)
                 ?: throw Exception("AT 指令没有输出")
 
+            // 不再手工转义引号：交给 JSONObject 序列化，
+            // 模组回包里出现反斜杠/控制字符也不会把 JSON 打坏
             var res = result
-                .replace("\"", "\\\"") // 转义引号
                 .replace("\n", "")
                 .replace("\r", "")
                 .trimStart()
@@ -60,11 +62,11 @@ fun Route.atModule(context: Context) {
                 res = res.removePrefix(",").trimStart()
             }
 
-            KanoLog.d(TAG, "AT_cmd：$atCommand")
+            KanoLog.d(TAG, "AT_cmd：$atArgv")
             KanoLog.d(TAG, "AT_result：$res")
 
             call.respondText(
-                """{"result":"$res"}""",
+                JSONObject().put("result", res).toString(),
                 ContentType.Application.Json
             )
 
@@ -72,7 +74,7 @@ fun Route.atModule(context: Context) {
             KanoLog.d(TAG, "AT指令执行错误：${e.message}")
 
             call.respondText(
-                """{"error":"AT指令执行错误：${e.message}"}""",
+                JSONObject().put("error", "AT指令执行错误：${e.message}").toString(),
                 ContentType.Application.Json,
                 HttpStatusCode.InternalServerError
             )

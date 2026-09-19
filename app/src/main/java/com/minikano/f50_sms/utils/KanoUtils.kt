@@ -388,8 +388,9 @@ class KanoUtils {
                 ?: throw Exception("复制 sendat 到 filesDir 失败")
             outFileAt.setExecutable(true)
 
-            val atCommand = "${outFileAt.absolutePath} -n $slot -c '${command.trim()}'"
-            val result = ShellKano.runShellCommand(atCommand, true)
+            // 同 atModule：argv 传参，避免命令拼接
+            val atArgv = listOf(outFileAt.absolutePath, "-n", slot.toString(), "-c", command.trim())
+            val result = ShellKano.runShellArgv(atArgv)
                 ?: throw Exception("AT 指令没有输出")
             var res = result
                 .replace("\"", "\\\"") // 转义引号

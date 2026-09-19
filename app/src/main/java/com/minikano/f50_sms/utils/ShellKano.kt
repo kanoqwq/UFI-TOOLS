@@ -20,6 +20,58 @@ class ShellKano {
     companion object {
         const val PREFS_NAME = "kano_ZTE_store"
 
+        /**
+         * 直接按 argv 执行，不经过 sh -c。
+         * 参数里就算有引号、分号、$() 也只会被当成普通字符串，
+         * 所以凡是把用户输入拼进命令行的地方都应该走这个方法。
+         */
+        fun runShellArgv(args: List<String>, timeoutSec: Long = 60L): String? {
+            if (args.isEmpty() || args[0].isBlank()) return null
+            return try {
+                drainProcess(Runtime.getRuntime().exec(args.toTypedArray()), timeoutSec)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
+            }
+        }
+
+        /**
+         * 读干净 stdout/stderr 并等待退出。
+         * 必须用独立线程读，否则管道写满会死锁。
+         */
+        private fun drainProcess(process: Process, timeoutSec: Long): String? {
+            val output = StringBuilder()
+            val error = StringBuilder()
+
+            val reader = process.inputStream.bufferedReader()
+            val errorReader = process.errorStream.bufferedReader()
+
+            val outThread = Thread {
+                try {
+                    reader.useLines { lines -> lines.forEach { output.appendLine(it) } }
+                } catch (_: Exception) {}
+            }
+            val errThread = Thread {
+                try {
+                    errorReader.useLines { lines -> lines.forEach { error.appendLine(it) } }
+                } catch (_: Exception) {}
+            }
+
+            outThread.start()
+            errThread.start()
+
+            val finished = process.waitFor(timeoutSec, TimeUnit.SECONDS)
+            if (!finished) {
+                process.destroyForcibly()
+                return null
+            }
+
+            outThread.join()
+            errThread.join()
+
+            return if (error.isNotEmpty()) null else output.toString().trim()
+        }
+
         fun runShellCommand(command: String?, escaped: Boolean = false,timeoutSec: Long = 60L): String? {
 
             if (command.isNullOrBlank()) return null
