@@ -3,6 +3,7 @@ package com.minikano.f50_sms.modules.ota
 import android.content.Context
 import com.minikano.f50_sms.configs.AppMeta
 import com.minikano.f50_sms.modules.BASE_TAG
+import com.minikano.f50_sms.utils.ApkVerifier
 import com.minikano.f50_sms.utils.KanoLog
 import com.minikano.f50_sms.utils.KanoRequest
 import com.minikano.f50_sms.utils.KanoUtils
@@ -194,6 +195,22 @@ fun Route.otaModule(context: Context) {
                     writer.write("""{"error":"未检测到已下载的 APK"}""")
                     return@launch
                 }
+
+                // 装之前先验签：包名 + 签名证书都要和当前版本一致。
+                // download_apk 收的是任意 URL，没有这一步的话更新通道
+                // 等同于"用 root 安装任意应用并自动授予全部权限"。
+                val verifyResult = ApkVerifier.verify(context, ApkState.downloadResultPath!!)
+                if (!verifyResult.ok) {
+                    KanoLog.w(TAG, "APK 校验未通过，拒绝安装：${verifyResult.reason}")
+                    // 不留着这个包，避免后续误装
+                    runCatching { File(ApkState.downloadResultPath!!).delete() }
+                    ApkState.downloadResultPath = null
+                    writer.write(
+                        """{"error":${JSONObject.quote("APK 校验未通过，已拒绝安装：${verifyResult.reason}")}}"""
+                    )
+                    return@launch
+                }
+                KanoLog.d(TAG, "APK 校验通过，开始安装")
 
                 //使用高级功能安装
                 val socketPath = File(context.filesDir, "kano_root_shell.sock")
