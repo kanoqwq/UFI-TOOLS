@@ -144,6 +144,7 @@ UFI-TOOLS 主要围绕中兴 T760 系列及相近平台设备设计，并优先�
 
 - F50
 - U30 Air
+- U30 Pro（MU5358，实验性；B23 出厂 WebUI 不能打开 ADB，完整版需先按 [U30 Pro macOS 教程](docs/U30-Pro-macOS.md) 刷入带无线 ADB 的 Root 包。作者说明见 issue #97。）
 - V50
 - U20（F50固件形态）
 - M3（部分固件版本）
@@ -377,6 +378,8 @@ UFI-TOOLS 适合以下常见场景：
 - 若通过投屏方式操作设备，请尽量保持连接稳定，避免安装过程中中断
 
 > **如果上述办法都无法安装，请考虑将设备Root，刷入预先打开USB调试的Root包进行强制开启ADB操作。**
+
+U30 Pro（MU5358 B23）属于这一类：原厂 `USB_PORT_SETTING` 即使开发者登录也会返回 `failure`。不要在 WebUI 中反复写该接口。macOS 上的下载模式备份、写入与安装步骤见 [docs/U30-Pro-macOS.md](docs/U30-Pro-macOS.md)。
 
 ### 3.5 首次启动
 
@@ -2339,6 +2342,8 @@ UFI-TOOLS 在使用过程中涉及以下常见访问地址和端口：
 
 以下资料可作为 UFI-TOOLS 使用、部署和排障时的参考：
 
+- U30 Pro macOS：<https://github.com/kanoqwq/UFI-TOOLS/blob/http-server-version/docs/U30-Pro-macOS.md>
+- issue #97：<https://github.com/kanoqwq/UFI-TOOLS/issues/97>
 - 项目仓库中的 `README.md`
 - UFI-TOOLS 一键安装器相关发布说明或演示资料
 - 插件商店中的插件说明页面
