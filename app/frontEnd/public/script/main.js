@@ -4744,6 +4744,24 @@ function main_func() {
     }
     initSmsForwardModal()
 
+    //「发给」支持逗号分隔的多个收件人：JavaMail 的 InternetAddress.parse() 原生就会拆成多条 RCPT TO，
+    //所以发送层不需要改动。中文输入法默认打出的是全角逗号/顿号，JavaMail 会把它们当成地址的一部分并抛
+    //AddressException（Domain contains illegal character），这里在输入时就统一归一化为半角逗号，
+    //再交给浏览器 type="email" multiple 的逐地址校验。
+    const bindMultiRecipientInput = (el) => {
+        if (!el || el.dataset.multiRecipientBound) return
+        el.dataset.multiRecipientBound = '1'
+        el.addEventListener('input', (e) => {
+            //输入法组合过程中不要改写输入框，等候选词上屏后再归一化
+            if (e.isComposing) return
+            if (!/[，；、]/.test(el.value)) return
+            //全角与半角都是单字符，替换前后等长，光标位置不受影响
+            //（注意：type="email" 的 input 不支持 setSelectionRange，不能在这里调光标）
+            el.value = el.value.replace(/[，；、]/g, ',')
+        })
+    }
+    bindMultiRecipientInput(document.querySelector('#smtp_to'))
+
     const handleSmsForwardForm = async (e) => {
         e.preventDefault()
         const form = e.target
@@ -4764,7 +4782,11 @@ function main_func() {
         if (!smtp_password || smtp_password.trim() == '') return createToast(t('toast_please_input_smtp_pwd'), 'red')
         // 发件邮箱可留空（回退为用户名），但填了就必须是邮箱，否则服务商必拒收
         if (smtp_from && smtp_from.trim() != '' && !smtp_from.includes('@')) return createToast(t('toast_please_input_smtp_from'), 'red')
-        if (!smtp_to || smtp_to.trim() == '') return createToast(t('toast_please_input_smtp_receive'), 'red')
+        //收件人支持逗号分隔的多个地址：这里再归一化一次并逐个校验，给出比浏览器原生提示更明确的报错
+        const smtpTo = (smtp_to || '').replace(/[，；、]/g, ',').split(',').map(s => s.trim()).filter(s => s != '')
+        if (smtpTo.length == 0) return createToast(t('toast_please_input_smtp_receive'), 'red')
+        const badSmtpTo = smtpTo.find(s => (s.match(/@/g) || []).length != 1 || /\s/.test(s))
+        if (badSmtpTo) return createToast(t('toast_please_input_smtp_to').replaceAll('$email$', badSmtpTo), 'red')
 
         //请求
         try {
@@ -4781,7 +4803,7 @@ function main_func() {
                     smtp_password: smtp_password.trim(),
                     smtp_from: smtp_from ? smtp_from.trim() : '',
                     smtp_from_name: smtp_from_name ? smtp_from_name.trim() : '',
-                    smtp_to: smtp_to.trim(),
+                    smtp_to: smtpTo.join(', '),
                     forward_dev_info: forward_dev_info ? "1" : "0"
                 })
             })).json()

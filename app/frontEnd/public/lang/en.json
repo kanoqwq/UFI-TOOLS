@@ -560,6 +560,7 @@
     "toast_please_input_smtp_pwd": "Enter SMTP password",
     "toast_please_input_smtp_from": "Enter a valid sender email (must contain @)",
     "toast_please_input_smtp_receive": "Enter recipient email",
+    "toast_please_input_smtp_to": "Invalid recipient email: $email$ (separate multiple recipients with commas)",
     "toast_smtp_test_mail": "Test mail sent, check inbox",
     "toast_curl_test_msg": "Test sent to target address",
     "toast_request_failed": "Request failed",
