@@ -39,6 +39,10 @@ UFI-TOOLS 提供 **Pocket Edition（PE版）** 与 **完整版本** 两种使用
 > - 只要你是某兴随身WiFi，紫光平台，Android系统，就可以尝试使用UFI-TOOLS进行设备管理。
 > - 直接下载PE版本连接设备进行尝试。
 
+### 社区 iOS 客户端
+
+[Turbo UFI](https://github.com/Turbo1123/turbo-ufi) 是面向 UFI-TOOLS 完整版的第三方开源 iPhone 客户端。已验证某兴 U30 Air B14 与 UFI-TOOLS 4.1.5，可在 iPhone 上查看设备和网络状态，管理热点与 Tailscale，并在配套桥接服务就绪后全屏操作设备内置的 Android 桌面。安装说明及界面截图见项目仓库。
+
 ---
 
 ## 📘 项目简介
