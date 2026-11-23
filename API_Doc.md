@@ -328,7 +328,8 @@ authorization: <SHA256(口令)的小写hex>
 | `data_flow_limit_enabled`            | 是否启用流量限制，接受 `"1"/"0"` 或布尔值                     |
 | `data_limit_status_forward_enabled`  | 达到阈值后是否推送提醒                                       |
 | `data_flow_max_limit`                | 流量上限（**字节**）；≤ 0 会被归一化为 `-1`（表示不限制）     |
-| `data_flow_check_daily_or_monthly`   | 统计周期：`daily` / `monthly`（其它值归为 `monthly`）         |
+| `data_flow_check_daily_or_monthly`   | 统计周期：`daily` / `monthly` / `billing_cycle`（其它值归为 `monthly`） |
+| `data_flow_settlement_day`          | 每月结日，整数 `1`–`31`，默认 `1`；省略时保留原配置，非法值返回 HTTP 400 |
 | `data_check_reference`               | 流量统计口径：`android` 或 `ufi`（两者等价，均存为 `android`）；其它值为 `default` |
 
 `GET /api/get_data_limit` 返回：
@@ -342,6 +343,10 @@ authorization: <SHA256(口令)的小写hex>
   "data_limit_status_forward_enabled": "1"
 }
 ```
+
+选择 `billing_cycle` 时，统计和断网阈值均采用 Android 流量统计，`data_check_reference` 自动设为 `android`。以设备本地时区结日零点为起点，下次结日零点为终点（不含）；当月不存在该日期时使用当月最后一天。例如结日为 15 日时，周期为 9 月 15 日至 10 月 14 日。结日为 31 日时，平年 2 月的起点为 2 月 28 日，下次起点仍为 3 月 31 日。
+
+`GET /api/get_data_limit` 还会返回 `data_flow_settlement_day`；在 `billing_cycle` 模式下额外返回 `billing_cycle_start`、`billing_cycle_end`（含当天，格式 `yyyy-MM-dd`）及 `billing_cycle_data`（本期已用字节数）。设备信息接口同样提供这三个周期字段，非周期模式下为 `null`；原 `monthly_data` 字段仍表示自然月用量。周期流量读取失败时，`billing_cycle_data` 为 `null`，界面显示 `N/A`，限额检查保留现有限制状态。
 
 ------
 

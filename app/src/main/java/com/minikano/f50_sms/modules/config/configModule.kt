@@ -15,6 +15,7 @@ import org.json.JSONObject
 import androidx.core.content.edit
 import com.minikano.f50_sms.configs.AppMeta
 import com.minikano.f50_sms.utils.KanoUtils
+import com.minikano.f50_sms.utils.BillingCycle
 
 fun Route.configModule(context: Context) {
     val TAG = "[$BASE_TAG]_configModule"
@@ -233,12 +234,23 @@ fun Route.configModule(context: Context) {
             var dataFlowMaxLimit = json.optLong("data_flow_max_limit", -1L)
             var flowType = json.optString("data_flow_check_daily_or_monthly", "monthly")
             var dataReference = json.optString("data_check_reference", "default")
+            val settlementDay = if (json.has("data_flow_settlement_day")) {
+                json.opt("data_flow_settlement_day")?.toString()?.toIntOrNull()
+            } else AppMeta.dataFlowSettlementDay
+            if (settlementDay == null || settlementDay !in 1..31) {
+                call.respondText(
+                    JSONObject().put("error", "结日必须为 1–31 日 / Settlement day must be between 1 and 31").toString(),
+                    ContentType.Application.Json,
+                    HttpStatusCode.BadRequest,
+                )
+                return@post
+            }
 
             if (dataFlowMaxLimit <= 0) {
                 dataFlowMaxLimit = -1L
             }
 
-            if (flowType != "daily") {
+            if (flowType !in setOf("daily", "billing_cycle")) {
                 flowType = "monthly"
             }
 
@@ -246,6 +258,8 @@ fun Route.configModule(context: Context) {
                 "android", "ufi" -> "android"
                 else -> "default"
             }
+            // The vendor's cumulative counter cannot represent an arbitrary billing cycle.
+            if (flowType == "billing_cycle") dataReference = "android"
 
             KanoLog.d(TAG, "接收到 data_flow_limit_enabled=$dataFlowEnabled")
             KanoLog.d(TAG, "接收到 data_flow_max_limit=$dataFlowMaxLimit")
@@ -254,6 +268,7 @@ fun Route.configModule(context: Context) {
             KanoLog.d(TAG, "接收到 data_limit_status_forward_enabled=$dataFlowNoticeEnabled")
 
             AppMeta.setIsDataFlowLimitEnabled(context, dataFlowEnabled == "1")
+            AppMeta.setDataFlowSettlementDay(context, settlementDay)
             AppMeta.setDataFlowCheckDailyOrMonthly(context, flowType)
             AppMeta.setDataFlowCheckRef(context, dataReference)
             AppMeta.setDataFlowMaxValue(context, dataFlowMaxLimit)
@@ -289,8 +304,23 @@ fun Route.configModule(context: Context) {
                 .put("data_flow_limit_enabled",if(AppMeta.isDataFlowLimitEnabled) "1" else "0")
                 .put("data_flow_max_limit",AppMeta.dataFlowMaxValue)
                 .put("data_flow_check_daily_or_monthly",AppMeta.dataFlowCheckDailyOrMonthly)
+                .put("data_flow_settlement_day", AppMeta.dataFlowSettlementDay)
                 .put("data_check_reference",AppMeta.dataFlowCheckRef)
                 .put("data_limit_status_forward_enabled",sharedPrefs.getString("kano_data_limit_status_forward_enabled","0"))
+
+            if (AppMeta.dataFlowCheckDailyOrMonthly == "billing_cycle") {
+                val cycle = BillingCycle.current(AppMeta.dataFlowSettlementDay)
+                val cycleUsage = try {
+                    KanoUtils.getCachedBillingCycleUsage(context, cycle)
+                } catch (e: Exception) {
+                    KanoLog.e(TAG, "结算周期流量读取失败", e)
+                    null
+                }
+                resultJson
+                    .put("billing_cycle_start", cycle.start.toString())
+                    .put("billing_cycle_end", cycle.endExclusive.minusDays(1).toString())
+                    .put("billing_cycle_data", cycleUsage ?: JSONObject.NULL)
+            }
 
             call.response.headers.append("Access-Control-Allow-Origin", "*")
             call.respondText(resultJson.toString(), ContentType.Application.Json, HttpStatusCode.OK)

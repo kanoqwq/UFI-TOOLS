@@ -811,7 +811,7 @@
                                     <input type="checkbox" name="data_flow_limit_enabled">
                                 </label>
                             </div>
-                            <div class="item" style="display: flex;gap: 10px;margin: 10px 0;">
+                            <div class="item" style="display: flex;flex-wrap: wrap;gap: 10px;margin: 10px 0;">
                                 <span style="font-size: 14px;" data-i18n="count_method">统计方式：</span>
                                 <label style="display: flex;align-items: center;">
                                     <span style="margin-right: 6px;" data-i18n="with_daily_flow">按日</span>
@@ -824,6 +824,22 @@
                                     <input style="margin: 0;" type="radio" value="monthly"
                                         name="data_flow_check_daily_or_monthly">
                                 </label>
+                                <label style="display: flex;align-items: center;">
+                                    <span style="margin-right: 6px;" data-i18n="with_billing_cycle_flow">按结算周期</span>
+                                    <input style="margin: 0;" type="radio" value="billing_cycle"
+                                        name="data_flow_check_daily_or_monthly">
+                                </label>
+                            </div>
+                            <div class="item" id="ufi_billing_cycle_options" style="display: none;">
+                                <label style="display: flex;align-items: center;gap: 10px;">
+                                    <span data-i18n="data_flow_settlement_day">每月结日：</span>
+                                    <input type="number" min="1" max="31" step="1" value="1" disabled
+                                        name="data_flow_settlement_day" style="width: 70px;">
+                                </label>
+                                <p data-i18n="billing_cycle_hint" style="font-size: 12px;line-height: 1.6;">
+                                    从结日当天起统计至下次结日前一天；当月无该日期时按月底处理。使用UFI后台流量统计。
+                                </p>
+                                <p id="ufi_billing_cycle_usage" style="font-size: 12px;line-height: 1.6;"></p>
                             </div>
                             <div class="item" style="display: flex;gap: 10px;margin: 10px 0;">
                                 <span style="font-size: 14px;" data-i18n="data_ref">流量参考：</span>

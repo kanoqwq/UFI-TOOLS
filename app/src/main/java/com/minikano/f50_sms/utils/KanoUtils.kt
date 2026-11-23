@@ -220,7 +220,8 @@ class KanoUtils {
         fun getRangeDataUsage(
             context: Context,
             startMills:Long,
-            endMills:Long
+            endMills:Long,
+            throwOnError: Boolean = false,
         ): Long {
             val networkStatsManager =
                 context.getSystemService(Context.NETWORK_STATS_SERVICE) as NetworkStatsManager
@@ -236,6 +237,7 @@ class KanoUtils {
                 )
                 totalBytes = summary.rxBytes + summary.txBytes
             } catch (e: Exception) {
+                if (throwOnError) throw e
                 e.printStackTrace()
             }
 
@@ -716,6 +718,29 @@ class KanoUtils {
             return cachedMonthlyTotal
         }
 
+        private var cachedBillingCycle: BillingCycle? = null
+        private var cachedBillingCycleTotal = 0L
+        private var lastBillingCycleUpdate = 0L
+
+        @Synchronized
+        fun getCachedBillingCycleUsage(
+            context: Context,
+            cycle: BillingCycle = BillingCycle.current(AppMeta.dataFlowSettlementDay),
+        ): Long {
+            val now = System.currentTimeMillis()
+            // Changing the settlement day, timezone or cycle invalidates the cache immediately.
+            if (cachedBillingCycle != cycle || now < lastBillingCycleUpdate ||
+                now - lastBillingCycleUpdate >= 10_000
+            ) {
+                cachedBillingCycleTotal = getRangeDataUsage(
+                    context, cycle.startMillis, minOf(now, cycle.endMillis), throwOnError = true,
+                )
+                cachedBillingCycle = cycle
+                lastBillingCycleUpdate = now
+            }
+            return cachedBillingCycleTotal
+        }
+
         fun getSELinuxStatus(): String {
             try {
                 val process = Runtime.getRuntime().exec("getenforce")
@@ -1186,16 +1211,16 @@ class KanoUtils {
         //检测流量是否超出阈值，超出断网
         fun checkAndDoDataLimitReachedAction(context: Context) {
             KanoLog.d("UFI_TOOLS_LOG_UFIDataManager","开始检查流量超限情况.....")
-            //判断日限 or 月限
+            // 按配置选择日、自然月或结算周期用量。
             val dataCheckType = AppMeta.dataFlowCheckDailyOrMonthly
             //超量检测判断依据
-            val dataFlow = if(dataCheckType == "monthly") {
-                when(AppMeta.dataFlowCheckRef) {
+            val dataFlow = when (dataCheckType) {
+                "billing_cycle" -> getCachedBillingCycleUsage(context)
+                "monthly" -> when(AppMeta.dataFlowCheckRef) {
                     "android" -> getCachedMonthlyUsage(context)
                     else -> getCatchedFlowMonth(context)
                 }
-            } else {
-                getCachedTodayUsage(context)
+                else -> getCachedTodayUsage(context)
             }
             //总流量
             val maxValue = AppMeta.dataFlowMaxValue

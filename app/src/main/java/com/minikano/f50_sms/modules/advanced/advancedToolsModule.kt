@@ -121,7 +121,8 @@ fun Route.advancedToolsModule(context: Context, targetServerIP: String) {
                 rm -f /data/samba/etc/smb.conf
                 KEEP_ALIVE_LOCK=/data/local/tmp/ufi_keep_alive.lock
                 KEEP_ALIVE_PID=${'$'}(cat ${'$'}KEEP_ALIVE_LOCK/pid 2>/dev/null)
-                if [ -n "${'$'}KEEP_ALIVE_PID" ] && [ -r "/proc/${'$'}KEEP_ALIVE_PID/cmdline" ] && tr '\\000' ' ' < "/proc/${'$'}KEEP_ALIVE_PID/cmdline" | grep ufi_keep_alive.sh >/dev/null 2>&1; then
+                # Let cat handle /proc read errors; old tr must only read from a pipe.
+                if [ -n "${'$'}KEEP_ALIVE_PID" ] && [ -r "/proc/${'$'}KEEP_ALIVE_PID/cmdline" ] && cat "/proc/${'$'}KEEP_ALIVE_PID/cmdline" 2>/dev/null | tr '\000' ' ' | grep 'ufi_keep_alive[.]sh' >/dev/null 2>&1; then
                     kill "${'$'}KEEP_ALIVE_PID" 2>/dev/null || true
                 fi
                 rm -rf ${'$'}KEEP_ALIVE_LOCK

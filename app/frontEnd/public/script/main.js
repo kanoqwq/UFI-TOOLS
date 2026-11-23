@@ -1030,7 +1030,7 @@ function main_func() {
                     if (!limit_size) return ''
                     return limit_size.split('_')[0] * limit_size.split('_')[1] * Math.pow(1024, 2)
                 })()) : ''}</strong>` : ''}`,
-                daily_data: `${notNullOrundefinedOrIsShow(res, 'daily_data') ? `<strong onclick="copyText(event)"  class="blue">${t('daily_data')}：${formatBytes(res.daily_data)}${res.monthly_data ? ` / ${t('monthly_data')}：${formatBytes(res.monthly_data)}` : ''}</strong>` : ''}`,
+                daily_data: `${notNullOrundefinedOrIsShow(res, 'daily_data') ? `<strong onclick="copyText(event)"  class="blue">${t('daily_data')}：${formatBytes(res.daily_data)}${res.billing_cycle_start && res.billing_cycle_end ? ` / <span title="${res.billing_cycle_start} – ${res.billing_cycle_end}">${t('billing_cycle_data')}：${res.billing_cycle_data != null ? formatBytes(res.billing_cycle_data) : 'N/A'}</span>` : res.monthly_data ? ` / ${t('monthly_data')}：${formatBytes(res.monthly_data)}` : ''}</strong>` : ''}`,
                 current_now: `${notNullOrundefinedOrIsShow(res, 'current_now') && (res.battery_value != '' || res.battery_vol_percent != '') ? `<strong onclick="copyText(event)"  class="blue">${t('battery_current')}：<span style="width: 9ch;text-align:center">${res.current_now / 1000} mA</span></strong>` : ''}`,
                 voltage_now: `${notNullOrundefinedOrIsShow(res, 'voltage_now') && (res.battery_value != '' || res.battery_vol_percent != '') ? `<strong onclick="copyText(event)"  class="blue">${t('battery_voltage')}：${(res.voltage_now / 1000000).toFixed(3)} V</strong>` : ''}`,
                 realtime_rx_thrpt: `${notNullOrundefinedOrIsShow(res, 'realtime_tx_thrpt') || notNullOrundefinedOrIsShow(res, 'realtime_rx_thrpt') ? `<strong onclick="copyText(event)" class="blue">${t("current_network_speed")}: <span style="text-align:center;white-space:nowrap;overflow:hidden;display:inline-block;width: 14ch;">⬇️&nbsp;${formatBytes(Number((res.realtime_rx_thrpt)))}/S</span><span style="white-space:nowrap;overflow:hidden;text-align:center;display:inline-block;width: 14ch;font-weight:bolder">⬆️&nbsp;${formatBytes(Number((res.realtime_tx_thrpt)))}/S</span></strong>` : ''}`,
@@ -8198,6 +8198,22 @@ echo ${flag ? '1' : '0'} > /sys/devices/system/cpu/cpu3/online
 
 
     //UFI流量管理逻辑
+    const updateUfiBillingCycleOptions = () => {
+        const form = document.querySelector('#UFIDataManagementForm')
+        if (!form) return
+        const isCycle = form.querySelector('input[name="data_flow_check_daily_or_monthly"]:checked')?.value === 'billing_cycle'
+        const dayInput = form.querySelector('input[name="data_flow_settlement_day"]')
+        form.querySelector('#ufi_billing_cycle_options').style.display = isCycle ? '' : 'none'
+        dayInput.disabled = !isCycle
+        dayInput.required = isCycle
+        form.querySelector('input[name="data_check_reference"][value="official"]').disabled = isCycle
+        if (isCycle) form.querySelector('input[name="data_check_reference"][value="ufi"]').checked = true
+        const usage = form.querySelector('#ufi_billing_cycle_usage')
+        usage.style.display = isCycle && usage.dataset.settlementDay === dayInput.value ? '' : 'none'
+    }
+    document.querySelector('#UFIDataManagementForm')?.addEventListener('change', updateUfiBillingCycleOptions)
+    document.querySelector('#UFIDataManagementForm input[name="data_flow_settlement_day"]')?.addEventListener('input', updateUfiBillingCycleOptions)
+
     const initUfiDataManagementModal = async () => {
         if (!(await initRequestData())) {
             createToast(t('toast_please_login'), 'red')
@@ -8255,6 +8271,15 @@ echo ${flag ? '1' : '0'} > /sys/devices/system/cpu/cpu3/online
             `input[name="data_check_reference"][value="${reference}"]`
         )
         if (referenceRadio) referenceRadio.checked = true
+
+        const dayInput = form.querySelector('input[name="data_flow_settlement_day"]')
+        dayInput.value = String(res.data_flow_settlement_day || 1)
+        const usage = form.querySelector('#ufi_billing_cycle_usage')
+        usage.dataset.settlementDay = dayInput.value
+        usage.textContent = res.billing_cycle_start && res.billing_cycle_end
+            ? `${res.billing_cycle_start} – ${res.billing_cycle_end} · ${t('billing_cycle_data')}：${res.billing_cycle_data != null ? formatBytes(Number(res.billing_cycle_data)) : 'N/A'}`
+            : ''
+        updateUfiBillingCycleOptions()
     }
 
     //UFI流量管理表单提交
@@ -8283,7 +8308,14 @@ echo ${flag ? '1' : '0'} > /sys/devices/system/cpu/cpu3/online
                         form_data[key] = value.trim() == 'official' ? 'default' : 'android'
                         break;
                     case 'data_flow_check_daily_or_monthly':
-                        form_data[key] = value.trim() == 'monthly' ? 'monthly' : 'daily'
+                        form_data[key] = ['daily', 'monthly', 'billing_cycle'].includes(value.trim()) ? value.trim() : 'monthly'
+                        break;
+                    case 'data_flow_settlement_day':
+                        if (!Number.isInteger(Number(value)) || Number(value) < 1 || Number(value) > 31) {
+                            createToast(t('invalid_settlement_day'), 'red')
+                            return
+                        }
+                        form_data[key] = Number(value)
                         break;
                     case 'data_limit_status_forward_enabled':
                         form_data[key] = value.trim() == 'on' ? '1' : '0'

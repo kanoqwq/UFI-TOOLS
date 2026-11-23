@@ -16,7 +16,8 @@ is_guard_running() {
     _pid="$1"
     [ -n "$_pid" ] || return 1
     [ -r "/proc/$_pid/cmdline" ] || return 1
-    tr '\000' ' ' < "/proc/$_pid/cmdline" 2>/dev/null | grep "ufi_keep_alive.sh" >/dev/null 2>&1
+    # Let cat handle /proc read errors; old tr must only read from a pipe.
+    cat "/proc/$_pid/cmdline" 2>/dev/null | tr '\000' ' ' | grep 'ufi_keep_alive[.]sh' >/dev/null 2>&1
 }
 
 rotate_log() {
@@ -41,7 +42,8 @@ if ! mkdir "$LOCK_DIR" 2>/dev/null; then
 fi
 
 echo $$ > "$PID_FILE"
-trap 'rm -rf "$LOCK_DIR"' EXIT INT TERM HUP
+trap 'rm -rf "$LOCK_DIR"' EXIT
+trap 'exit 0' INT TERM HUP
 
 rotate_log
 echo "[`date`] UFI-TOOLS keep-alive started, pid=$$" >> "$LOG_FILE"

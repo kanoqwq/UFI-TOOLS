@@ -7,6 +7,7 @@ import com.minikano.f50_sms.modules.BASE_TAG
 import com.minikano.f50_sms.modules.PREFS_NAME
 import com.minikano.f50_sms.utils.KanoLog
 import com.minikano.f50_sms.utils.KanoUtils
+import com.minikano.f50_sms.utils.BillingCycle
 import com.minikano.f50_sms.utils.UniqueDeviceIDManager
 import com.minikano.f50_sms.utils.getCpuUsageSnapshot
 import com.minikano.f50_sms.utils.getCpuFreqJson
@@ -102,6 +103,10 @@ fun Route.baseDeviceInfoModule(context: Context) {
         //存储与日流量获取
         var dailyDataRes: Long? = null
         var monthlyDataRes: Long? = null
+        val billingCycle = if (AppMeta.dataFlowCheckDailyOrMonthly == "billing_cycle") {
+            BillingCycle.current(AppMeta.dataFlowSettlementDay)
+        } else null
+        var billingCycleDataRes: Long? = null
         var availableSizeRes: Long? = null
         var usedSizeRes: Long? = null
         var totalSizeRes: Long? = null
@@ -150,6 +155,14 @@ fun Route.baseDeviceInfoModule(context: Context) {
         }
 
 
+        if (billingCycle != null) {
+            try {
+                billingCycleDataRes = KanoUtils.getCachedBillingCycleUsage(context, billingCycle)
+            } catch (e: Exception) {
+                KanoLog.e(TAG, "结算周期流量读取失败", e)
+            }
+        }
+
         //型号与电量获取
         var versionNameRes: String? = null
         var versionCodeRes: Int? = null
@@ -188,6 +201,9 @@ fun Route.baseDeviceInfoModule(context: Context) {
                 "battery": "$batteryLevelRes",
                 "daily_data": $dailyDataRes,
                 "monthly_data": $monthlyDataRes,
+                "billing_cycle_data": $billingCycleDataRes,
+                "billing_cycle_start": ${billingCycle?.let { "\"${it.start}\"" } ?: "null"},
+                "billing_cycle_end": ${billingCycle?.let { "\"${it.endExclusive.minusDays(1)}\"" } ?: "null"},
                 "internal_available_storage": $availableSizeRes,
                 "internal_used_storage": $usedSizeRes,
                 "internal_total_storage": $totalSizeRes,

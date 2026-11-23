@@ -56,6 +56,8 @@ object AppMeta {
     var isReachedDataFlowLimit = false
 
     var dataFlowCheckDailyOrMonthly = "monthly"
+    var dataFlowSettlementDay = 1
+        private set
     private const val PREFS_NAME = "kano_ZTE_store"
     private const val GLOBAL_SERVER_URL_KEY = "GLOBAL_SERVER_URL"
     private val PREF_ISDEBUG = "kano_is_debug"
@@ -65,6 +67,7 @@ object AppMeta {
     private val PREF_IS_DATA_FLOW_LIMIT_ENABLED = "kano_data_flow_limit_enabled"
     private val PREF_DATA_FLOW_MAX_LIMIT = "kano_data_flow_max_limit"
     private val PREF_DATA_FLOW_CHECK_DAILY_OR_MONTHLY = "kano_data_flow_check_daily_or_monthly"
+    private const val PREF_DATA_FLOW_SETTLEMENT_DAY = "kano_data_flow_settlement_day"
     private val PREF_DATA_CHECK_REFERENCE = "kano_data_check_reference"
 
     fun setWebServerCookie(ck: String): Boolean {
@@ -89,6 +92,14 @@ object AppMeta {
             putString(PREF_DATA_CHECK_REFERENCE,value)
         }
         dataFlowCheckRef = value
+    }
+
+    fun setDataFlowSettlementDay(context: Context, value: Int) {
+        require(value in 1..31) { "结日必须为 1–31 日 / Settlement day must be between 1 and 31" }
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit(commit = true) {
+            putInt(PREF_DATA_FLOW_SETTLEMENT_DAY, value)
+        }
+        dataFlowSettlementDay = value
     }
 
     fun setIsDataFlowLimitEnabled(context: Context,value: Boolean){
@@ -196,6 +207,7 @@ object AppMeta {
             dataFlowCheckRef = prefs.getString(PREF_DATA_CHECK_REFERENCE,"default") ?: "default"
             isDataFlowLimitEnabled = (prefs.getString(PREF_IS_DATA_FLOW_LIMIT_ENABLED,"0") ?: "0") != "0"
             dataFlowCheckDailyOrMonthly = prefs.getString(PREF_DATA_FLOW_CHECK_DAILY_OR_MONTHLY,"monthly") ?: "monthly"
+            dataFlowSettlementDay = prefs.getInt(PREF_DATA_FLOW_SETTLEMENT_DAY, 1).coerceIn(1, 31)
             dataFlowMaxValue = prefs.getLong(PREF_DATA_FLOW_MAX_LIMIT,-1)
         } catch (e: Exception) {
             KanoLog.e("UFI_TOOLS_LOG","AppMeta init failed！！",e)
