@@ -561,6 +561,7 @@
     "toast_please_input_smtp_pwd": "SMTPサーバーパスワードを入力してください",
     "toast_please_input_smtp_from": "有効な送信元メールアドレス（@ を含む）を入力してください",
     "toast_please_input_smtp_receive": "受信者のメールアドレスを入力してください",
+    "toast_please_input_smtp_to": "受信者のメールアドレスが不正です：$email$（複数の場合は半角カンマで区切ってください）",
     "toast_smtp_test_mail": "設定成功。システムはテストメールを送信しますのでご確認ください〜",
     "toast_curl_test_msg": "設定成功。システムはテストメッセージを送信しますのでご確認ください〜",
     "toast_request_failed": "リクエスト失敗",

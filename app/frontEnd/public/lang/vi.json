@@ -560,6 +560,7 @@
     "toast_please_input_smtp_pwd": "Nhập mật khẩu SMTP",
     "toast_please_input_smtp_from": "Nhập email người gửi hợp lệ (phải chứa @)",
     "toast_please_input_smtp_receive": "Nhập email người nhận",
+    "toast_please_input_smtp_to": "Email người nhận không hợp lệ: $email$ (nhiều người nhận thì phân cách bằng dấu phẩy)",
     "toast_smtp_test_mail": "Email kiểm tra đã gửi, kiểm tra hộp thư",
     "toast_curl_test_msg": "Tin nhắn kiểm tra đã gửi đến địa chỉ đích",
     "toast_request_failed": "Yêu cầu thất bại",

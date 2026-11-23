@@ -574,6 +574,7 @@
     "toast_please_input_smtp_pwd": "请输入SMTP服务器密码",
     "toast_please_input_smtp_from": "请输入合法的发件邮箱（需包含 @）",
     "toast_please_input_smtp_receive": "请输入收件人邮箱",
+    "toast_please_input_smtp_to": "收件人邮箱格式不正确：$email$（多个收件人请用英文逗号分隔）",
     "toast_smtp_test_mail": "设置成功,系统会向目标邮箱发送一个测试消息，请注意查收~",
     "toast_curl_test_msg": "设置成功,系统会向目标地址发送一个测试消息，请注意查收~",
     "toast_request_failed": "请求失败",

@@ -45,7 +45,13 @@ fun Route.smsModule(context: Context) {
 
             val smtpHost = json.optString("smtp_host", "").trim()
             val smtpPort = json.optString("smtp_port", "465").trim()
-            val smtpTo = json.optString("smtp_to", "").trim()
+            // 「发给」支持逗号分隔的多个收件人：JavaMail 的 InternetAddress.parse() 原生会拆成多条 RCPT TO，
+            // 发送层无需改动。中文输入法容易打出全角逗号/顿号，JavaMail 会判为域名非法字符（AddressException），
+            // 所以这里先把分隔符归一化为半角逗号再逐个校验，让直接调用本 API 的一方拿到明确报错，
+            // 而不是等到发信时只在日志里留下一个 AddressException。
+            val smtpTo = json.optString("smtp_to", "")
+                .replace('，', ',').replace('；', ',').replace('、', ',')
+                .split(',').map { it.trim() }.filter { it.isNotEmpty() }
             val smtpUsername = json.optString("smtp_username", "").trim()
             val smtpPassword = json.optString("smtp_password", "").trim()
             // 发件邮箱（可选）：Resend / Mailjet / SMTP2GO 等服务商的「SMTP 认证用户名」与
@@ -59,6 +65,14 @@ fun Route.smsModule(context: Context) {
                 throw Exception("缺少必要参数")
             }
 
+            // 每个收件人都必须是单个合法地址：有且只有一个 @，且不含空白字符
+            val badTo = smtpTo.firstOrNull { addr ->
+                addr.count { it == '@' } != 1 || addr.any { it.isWhitespace() }
+            }
+            if (badTo != null) {
+                throw Exception("收件人邮箱格式不正确：$badTo")
+            }
+
             // 填了发件邮箱就必须是合法邮箱地址，否则服务商一定拒收
             if (smtpFrom.isNotEmpty() && !smtpFrom.contains("@")) {
                 throw Exception("发件邮箱格式不正确：$smtpFrom")
@@ -70,7 +84,7 @@ fun Route.smsModule(context: Context) {
                 putString("kano_sms_forward_method", "SMTP")
                 putString("kano_smtp_host", smtpHost)
                 putString("kano_smtp_port", smtpPort)
-                putString("kano_smtp_to", smtpTo)
+                putString("kano_smtp_to", smtpTo.joinToString(", "))
                 putString("kano_smtp_username", smtpUsername)
                 putString("kano_smtp_password", smtpPassword)
                 putString("kano_smtp_from", smtpFrom)
@@ -80,7 +94,7 @@ fun Route.smsModule(context: Context) {
 
             KanoLog.d(
                 TAG,
-                "SMTP配置已保存：$smtpHost:$smtpPort [认证用户：$smtpUsername] [发件人：${smtpFrom.ifEmpty { smtpUsername }}]"
+                "SMTP配置已保存：$smtpHost:$smtpPort [认证用户：$smtpUsername] [发件人：${smtpFrom.ifEmpty { smtpUsername }}] [收件人：${smtpTo.size} 个]"
             )
 
             val test_msg = SmsInfo("1145141919810", "UFI-TOOLS TEST消息", System.currentTimeMillis())
